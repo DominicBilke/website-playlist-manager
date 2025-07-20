@@ -1,0 +1,9 @@
+{
+    "require": {
+        "jwilsson/spotify-web-api-php": "^5.6",
+        "pouler/apple-music-api": "^0.5.3",
+        "symfony/http-client": "^5.4",
+        "google/apiclient": "^2.0",
+        "web-token/jwt-library": "^3.3"
+    }
+}
