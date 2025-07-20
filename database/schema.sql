@@ -165,7 +165,6 @@ INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`, `descripti
 CREATE INDEX IF NOT EXISTS `idx_users_team` ON `users` (`team`);
 CREATE INDEX IF NOT EXISTS `idx_users_office` ON `users` (`office`);
 CREATE INDEX IF NOT EXISTS `idx_users_currently_playing` ON `users` (`currently_playing`);
-CREATE INDEX IF NOT EXISTS `idx_users_role_status` ON `users` (`role`, `status`);
 CREATE INDEX IF NOT EXISTS `idx_listening_stats_user_platform` ON `listening_stats` (`user_id`, `platform`);
 CREATE INDEX IF NOT EXISTS `idx_listening_stats_played_at` ON `listening_stats` (`played_at`);
 CREATE INDEX IF NOT EXISTS `idx_api_tokens_expires_at` ON `api_tokens` (`expires_at`);
