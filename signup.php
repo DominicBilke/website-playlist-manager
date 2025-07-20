@@ -1,349 +1,370 @@
 <?php
-require 'script/inc_start.php';
-require 'script/languages.php';
-require 'script/language_utils.php';
+require 'script/init.php';
+
+// Check if user is already logged in
+if (isset($_SESSION['user_id'])) {
+    header('Location: account.php');
+    exit();
+}
+
+$error_message = '';
+$success_message = '';
+
+// Handle signup form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = [
+        'login' => trim($_POST['login'] ?? ''),
+        'email' => trim($_POST['email'] ?? ''),
+        'password' => $_POST['password'] ?? '',
+        'confirm_password' => $_POST['confirm_password'] ?? '',
+        'team' => trim($_POST['team'] ?? ''),
+        'office' => trim($_POST['office'] ?? '')
+    ];
+    
+    $result = $auth->register($data);
+    
+    if ($result['success']) {
+        $success_message = $lang->get('signup_successful');
+    } else {
+        $error_message = $result['message'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $lang->getCurrentLanguage(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Playlist Manager</title>
-    <meta name="description" content="Create your Playlist Manager account">
+    <title><?php echo $lang->get('sign_up'); ?> - Playlist Manager</title>
     
-    <!-- Modern CSS Framework -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom Styles -->
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .glass-effect { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
-        .animate-fade-in { animation: fadeIn 0.6s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .form-input:focus { box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-        .password-strength { transition: all 0.3s ease; }
-    </style>
+    <link href="assets/css/main.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
-<body class="gradient-bg min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8 animate-fade-in">
-        <!-- Header -->
-        <div class="text-center">
-            <div class="flex justify-center mb-6">
-                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
-                    <i class="fas fa-user-plus text-3xl text-purple-600"></i>
-                </div>
-            </div>
-            <h2 class="text-3xl font-bold text-white mb-2"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Konto erstellen' : 'Create Account'; ?></h2>
-            <p class="text-purple-100"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Werden Sie Teil der Playlist Manager Community' : 'Join the Playlist Manager community'; ?></p>
-        </div>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <?php include 'components/header.php'; ?>
 
-        <!-- Signup Form -->
-        <div class="glass-effect rounded-2xl p-8 shadow-2xl">
-            <form class="space-y-6" method="GET" action="script/signup.php" id="signupForm">
-                <!-- Username Field -->
-                <div>
-                    <label for="login" class="block text-sm font-medium text-white mb-2">
-                        <i class="fas fa-user mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Benutzername' : 'Username'; ?>
-                    </label>
-                    <input 
-                        id="login" 
-                        name="login" 
-                        type="text" 
-                        required 
-                        class="form-input appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                        placeholder="<?php echo $lang->getCurrentLanguage() === 'de' ? 'Wählen Sie einen Benutzernamen' : 'Choose a username'; ?>"
-                        minlength="3"
-                    >
-                    <p class="mt-1 text-xs text-purple-200"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Benutzername muss mindestens 3 Zeichen lang sein' : 'Username must be at least 3 characters long'; ?></p>
-                </div>
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <div class="flex justify-center">
+                <div class="w-full max-w-lg">
+                    <!-- Signup Card -->
+                    <div class="card">
+                        <div class="card-header text-center">
+                            <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                                <?php echo $lang->get('create_account'); ?>
+                            </h1>
+                            <p class="text-gray-600">
+                                <?php echo $lang->get('join_playlist_manager'); ?>
+                            </p>
+                        </div>
 
-                <!-- Password Field -->
-                <div>
-                    <label for="password" class="block text-sm font-medium text-white mb-2">
-                        <i class="fas fa-lock mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Passwort' : 'Password'; ?>
-                    </label>
-                    <div class="relative">
-                        <input 
-                            id="password" 
-                            name="password" 
-                            type="password" 
-                            required 
-                            class="form-input appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                            placeholder="<?php echo $lang->getCurrentLanguage() === 'de' ? 'Erstellen Sie ein sicheres Passwort' : 'Create a strong password'; ?>"
-                            minlength="6"
-                        >
-                        <button 
-                            type="button" 
-                            class="absolute inset-y-0 right-0 pr-3 flex items-center password-toggle"
-                            onclick="togglePassword()"
-                        >
-                            <i class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
-                        </button>
-                    </div>
-                    <div class="mt-2">
-                        <div class="flex space-x-1">
-                            <div class="flex-1 h-2 bg-gray-300 rounded-full overflow-hidden">
-                                <div id="strength-bar" class="h-full bg-red-500 transition-all duration-300" style="width: 0%"></div>
+                        <div class="card-body">
+                            <?php if ($error_message): ?>
+                                <div class="alert alert-error mb-4">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <?php echo htmlspecialchars($error_message); ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if ($success_message): ?>
+                                <div class="alert alert-success mb-4">
+                                    <i class="fas fa-check-circle"></i>
+                                    <?php echo htmlspecialchars($success_message); ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Signup Form -->
+                            <form method="POST" action="signup.php" class="space-y-4">
+                                <div class="form-group">
+                                    <label for="login" class="form-label">
+                                        <?php echo $lang->get('username'); ?> *
+                                    </label>
+                                    <div class="relative">
+                                        <input 
+                                            type="text" 
+                                            id="login" 
+                                            name="login" 
+                                            class="form-input pl-10" 
+                                            placeholder="<?php echo $lang->get('enter_username'); ?>"
+                                            value="<?php echo htmlspecialchars($_POST['login'] ?? ''); ?>"
+                                            required
+                                        >
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fas fa-user text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="email" class="form-label">
+                                        <?php echo $lang->get('email'); ?>
+                                    </label>
+                                    <div class="relative">
+                                        <input 
+                                            type="email" 
+                                            id="email" 
+                                            name="email" 
+                                            class="form-input pl-10" 
+                                            placeholder="<?php echo $lang->get('enter_your_email'); ?>"
+                                            value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
+                                        >
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fas fa-envelope text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="password" class="form-label">
+                                        <?php echo $lang->get('password'); ?> *
+                                    </label>
+                                    <div class="relative">
+                                        <input 
+                                            type="password" 
+                                            id="password" 
+                                            name="password" 
+                                            class="form-input pl-10 pr-10" 
+                                            placeholder="<?php echo $lang->get('enter_password'); ?>"
+                                            required
+                                            minlength="8"
+                                        >
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fas fa-lock text-gray-400"></i>
+                                        </div>
+                                        <button 
+                                            type="button" 
+                                            class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                            onclick="togglePassword('password')"
+                                        >
+                                            <i id="password-toggle" class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+                                        </button>
+                                    </div>
+                                    <div class="password-strength mt-2" id="password-strength"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="confirm_password" class="form-label">
+                                        <?php echo $lang->get('confirm_password'); ?> *
+                                    </label>
+                                    <div class="relative">
+                                        <input 
+                                            type="password" 
+                                            id="confirm_password" 
+                                            name="confirm_password" 
+                                            class="form-input pl-10 pr-10" 
+                                            placeholder="<?php echo $lang->get('confirm_password'); ?>"
+                                            required
+                                        >
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fas fa-lock text-gray-400"></i>
+                                        </div>
+                                        <button 
+                                            type="button" 
+                                            class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                            onclick="togglePassword('confirm_password')"
+                                        >
+                                            <i id="confirm-password-toggle" class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+                                        </button>
+                                    </div>
+                                    <div class="password-match mt-2" id="password-match"></div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="form-group">
+                                        <label for="team" class="form-label">
+                                            <?php echo $lang->get('team'); ?> *
+                                        </label>
+                                        <div class="relative">
+                                            <input 
+                                                type="text" 
+                                                id="team" 
+                                                name="team" 
+                                                class="form-input pl-10" 
+                                                placeholder="<?php echo $lang->get('enter_team'); ?>"
+                                                value="<?php echo htmlspecialchars($_POST['team'] ?? ''); ?>"
+                                                required
+                                            >
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <i class="fas fa-users text-gray-400"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="office" class="form-label">
+                                            <?php echo $lang->get('office'); ?> *
+                                        </label>
+                                        <div class="relative">
+                                            <input 
+                                                type="text" 
+                                                id="office" 
+                                                name="office" 
+                                                class="form-input pl-10" 
+                                                placeholder="<?php echo $lang->get('enter_office'); ?>"
+                                                value="<?php echo htmlspecialchars($_POST['office'] ?? ''); ?>"
+                                                required
+                                            >
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <i class="fas fa-building text-gray-400"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-full" id="submit-btn" disabled>
+                                    <i class="fas fa-user-plus mr-2"></i>
+                                    <?php echo $lang->get('create_account'); ?>
+                                </button>
+                            </form>
+
+                            <!-- Divider -->
+                            <div class="relative my-6">
+                                <div class="absolute inset-0 flex items-center">
+                                    <div class="w-full border-t border-gray-300"></div>
+                                </div>
+                                <div class="relative flex justify-center text-sm">
+                                    <span class="px-2 bg-white text-gray-500">
+                                        <?php echo $lang->get('or'); ?>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Social Signup Buttons -->
+                            <div class="space-y-3">
+                                <button class="btn btn-secondary w-full">
+                                    <i class="fab fa-google mr-2"></i>
+                                    <?php echo $lang->get('continue_with_google'); ?>
+                                </button>
+                                
+                                <button class="btn btn-secondary w-full">
+                                    <i class="fab fa-apple mr-2"></i>
+                                    <?php echo $lang->get('continue_with_apple'); ?>
+                                </button>
+                            </div>
+
+                            <!-- Sign In Link -->
+                            <div class="text-center mt-6">
+                                <p class="text-gray-600">
+                                    <?php echo $lang->get('already_have_account'); ?> 
+                                    <a href="login.php" class="text-primary-600 hover:text-primary-700 font-medium">
+                                        <?php echo $lang->get('sign_in'); ?>
+                                    </a>
+                                </p>
                             </div>
                         </div>
-                        <p id="strength-text" class="mt-1 text-xs text-purple-200"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Passwort-Stärke:' : 'Password strength:'; ?> <span class="font-medium"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Schwach' : 'Weak'; ?></span></p>
+                    </div>
+
+                    <!-- Back to Home -->
+                    <div class="text-center mt-6">
+                        <a href="index.php" class="text-gray-600 hover:text-gray-700">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            <?php echo $lang->get('back_to_home'); ?>
+                        </a>
                     </div>
                 </div>
-
-                <!-- Confirm Password Field -->
-                <div>
-                    <label for="password_confirm" class="block text-sm font-medium text-white mb-2">
-                        <i class="fas fa-lock mr-2"></i>Confirm Password
-                    </label>
-                    <input 
-                        id="password_confirm" 
-                        name="password_confirm" 
-                        type="password" 
-                        required 
-                        class="form-input appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                        placeholder="Confirm your password"
-                    >
-                    <p id="password-match" class="mt-1 text-xs text-red-300 hidden">Passwords do not match</p>
-                </div>
-
-                <!-- Team Number -->
-                <div>
-                    <label for="team" class="block text-sm font-medium text-white mb-2">
-                        <i class="fas fa-users mr-2"></i>Team Number
-                    </label>
-                    <input 
-                        id="team" 
-                        name="team" 
-                        type="number" 
-                        required 
-                        class="form-input appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                        placeholder="Enter your team number"
-                        min="1"
-                    >
-                </div>
-
-                <!-- Office -->
-                <div>
-                    <label for="office" class="block text-sm font-medium text-white mb-2">
-                        <i class="fas fa-building mr-2"></i>Office
-                    </label>
-                    <select 
-                        id="office" 
-                        name="office" 
-                        required 
-                        class="form-input appearance-none relative block w-full px-3 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                    >
-                        <option value="">Select your office</option>
-                        <option value="Berlin">Berlin</option>
-                        <option value="Hamburg">Hamburg</option>
-                        <option value="Munich">Munich</option>
-                        <option value="Cologne">Cologne</option>
-                        <option value="Frankfurt">Frankfurt</option>
-                        <option value="Stuttgart">Stuttgart</option>
-                        <option value="Düsseldorf">Düsseldorf</option>
-                        <option value="Leipzig">Leipzig</option>
-                        <option value="Dortmund">Dortmund</option>
-                        <option value="Essen">Essen</option>
-                    </select>
-                </div>
-
-                <!-- Terms and Conditions -->
-                <div class="flex items-start">
-                    <div class="flex items-center h-5">
-                        <input 
-                            id="terms" 
-                            name="terms" 
-                            type="checkbox" 
-                            required 
-                            class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                        >
-                    </div>
-                    <div class="ml-3 text-sm">
-                        <label for="terms" class="text-white">
-                            I agree to the 
-                            <a href="#" class="text-purple-200 hover:text-white underline">Terms of Service</a> 
-                            and 
-                            <a href="datenschutz.php" class="text-purple-200 hover:text-white underline">Privacy Policy</a>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div>
-                    <button 
-                        type="submit" 
-                        id="submit-btn"
-                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                            <i class="fas fa-user-plus text-purple-300 group-hover:text-purple-200"></i>
-                        </span>
-                        Create Account
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
+    </main>
 
-        <!-- Login Link -->
-        <div class="text-center">
-            <p class="text-white">
-                Already have an account? 
-                <a href="login.php" class="font-medium text-purple-200 hover:text-white transition-colors">
-                    Sign in here
-                </a>
-            </p>
-        </div>
+    <!-- Footer -->
+    <?php include 'components/footer.php'; ?>
 
-        <!-- Back to Home -->
-        <div class="text-center">
-            <a href="index.php" class="text-purple-200 hover:text-white transition-colors inline-flex items-center">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Back to Home
-            </a>
-        </div>
-    </div>
-
-    <!-- Background Animation -->
-    <div class="fixed inset-0 -z-10">
-        <div class="absolute inset-0 bg-gradient-to-br from-purple-600 via-blue-600 to-purple-800"></div>
-        <div class="absolute inset-0 bg-black opacity-20"></div>
-        <!-- Animated background elements -->
-        <div class="absolute top-1/4 left-1/4 w-32 h-32 bg-white opacity-10 rounded-full animate-pulse"></div>
-        <div class="absolute top-3/4 right-1/4 w-24 h-24 bg-white opacity-10 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
-        <div class="absolute bottom-1/4 left-1/3 w-16 h-16 bg-white opacity-10 rounded-full animate-pulse" style="animation-delay: 2s;"></div>
-    </div>
-
-    <!-- Modern JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.3.11/dist/alpine.min.js" defer></script>
     <script>
-        // Password strength checker
-        function checkPasswordStrength(password) {
-            let strength = 0;
-            let feedback = [];
+    function togglePassword(fieldId) {
+        const passwordInput = document.getElementById(fieldId);
+        const passwordToggle = document.getElementById(fieldId === 'password' ? 'password-toggle' : 'confirm-password-toggle');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            passwordToggle.classList.remove('fa-eye');
+            passwordToggle.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            passwordToggle.classList.remove('fa-eye-slash');
+            passwordToggle.classList.add('fa-eye');
+        }
+    }
 
-            if (password.length >= 8) strength += 1;
-            if (password.match(/[a-z]/)) strength += 1;
-            if (password.match(/[A-Z]/)) strength += 1;
-            if (password.match(/[0-9]/)) strength += 1;
-            if (password.match(/[^a-zA-Z0-9]/)) strength += 1;
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        let feedback = [];
 
-            const strengthBar = document.getElementById('strength-bar');
-            const strengthText = document.getElementById('strength-text');
-            const strengthLabel = strengthText.querySelector('span');
+        if (password.length >= 8) strength++;
+        else feedback.push('At least 8 characters');
 
-            switch (strength) {
-                case 0:
-                case 1:
-                    strengthBar.style.width = '20%';
-                    strengthBar.className = 'h-full bg-red-500 transition-all duration-300';
-                    strengthLabel.textContent = 'Very Weak';
-                    strengthLabel.className = 'font-medium text-red-300';
-                    break;
-                case 2:
-                    strengthBar.style.width = '40%';
-                    strengthBar.className = 'h-full bg-orange-500 transition-all duration-300';
-                    strengthLabel.textContent = 'Weak';
-                    strengthLabel.className = 'font-medium text-orange-300';
-                    break;
-                case 3:
-                    strengthBar.style.width = '60%';
-                    strengthBar.className = 'h-full bg-yellow-500 transition-all duration-300';
-                    strengthLabel.textContent = 'Fair';
-                    strengthLabel.className = 'font-medium text-yellow-300';
-                    break;
-                case 4:
-                    strengthBar.style.width = '80%';
-                    strengthBar.className = 'h-full bg-blue-500 transition-all duration-300';
-                    strengthLabel.textContent = 'Good';
-                    strengthLabel.className = 'font-medium text-blue-300';
-                    break;
-                case 5:
-                    strengthBar.style.width = '100%';
-                    strengthBar.className = 'h-full bg-green-500 transition-all duration-300';
-                    strengthLabel.textContent = 'Strong';
-                    strengthLabel.className = 'font-medium text-green-300';
-                    break;
-            }
+        if (/[a-z]/.test(password)) strength++;
+        else feedback.push('Lowercase letter');
+
+        if (/[A-Z]/.test(password)) strength++;
+        else feedback.push('Uppercase letter');
+
+        if (/[0-9]/.test(password)) strength++;
+        else feedback.push('Number');
+
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        else feedback.push('Special character');
+
+        return { strength, feedback };
+    }
+
+    function updatePasswordStrength() {
+        const password = document.getElementById('password').value;
+        const strengthDiv = document.getElementById('password-strength');
+        const confirmPassword = document.getElementById('confirm_password').value;
+        const matchDiv = document.getElementById('password-match');
+        const submitBtn = document.getElementById('submit-btn');
+
+        if (password) {
+            const { strength, feedback } = checkPasswordStrength(password);
+            const strengthText = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+            const strengthColor = ['text-red-600', 'text-orange-600', 'text-yellow-600', 'text-blue-600', 'text-green-600'];
+
+            strengthDiv.innerHTML = `
+                <div class="text-sm">
+                    <span class="${strengthColor[strength - 1]} font-medium">${strengthText[strength - 1]}</span>
+                    ${feedback.length > 0 ? '<br><span class="text-gray-500 text-xs">Missing: ' + feedback.join(', ') + '</span>' : ''}
+                </div>
+            `;
+        } else {
+            strengthDiv.innerHTML = '';
         }
 
-        // Password confirmation checker
-        function checkPasswordMatch() {
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('password_confirm').value;
-            const matchIndicator = document.getElementById('password-match');
-            const submitBtn = document.getElementById('submit-btn');
-
-            if (confirmPassword && password !== confirmPassword) {
-                matchIndicator.classList.remove('hidden');
-                submitBtn.disabled = true;
+        // Check password match
+        if (confirmPassword) {
+            if (password === confirmPassword) {
+                matchDiv.innerHTML = '<span class="text-green-600 text-sm"><i class="fas fa-check mr-1"></i>Passwords match</span>';
             } else {
-                matchIndicator.classList.add('hidden');
-                submitBtn.disabled = false;
+                matchDiv.innerHTML = '<span class="text-red-600 text-sm"><i class="fas fa-times mr-1"></i>Passwords do not match</span>';
             }
+        } else {
+            matchDiv.innerHTML = '';
         }
 
-        // Form validation and enhancement
-        document.addEventListener('DOMContentLoaded', function() {
-            const passwordInput = document.getElementById('password');
-            const confirmPasswordInput = document.getElementById('password_confirm');
-            const form = document.getElementById('signupForm');
+        // Enable/disable submit button
+        const { strength } = checkPasswordStrength(password);
+        const passwordsMatch = password === confirmPassword;
+        const hasRequiredFields = document.getElementById('login').value && 
+                                 document.getElementById('team').value && 
+                                 document.getElementById('office').value;
 
-            // Password strength checking
-            passwordInput.addEventListener('input', function() {
-                checkPasswordStrength(this.value);
-                checkPasswordMatch();
-            });
+        submitBtn.disabled = !(strength >= 3 && passwordsMatch && hasRequiredFields);
+    }
 
-            // Password confirmation checking
-            confirmPasswordInput.addEventListener('input', checkPasswordMatch);
-
-            // Form submission enhancement
-            form.addEventListener('submit', function(e) {
-                const submitBtn = document.getElementById('submit-btn');
-                const originalText = submitBtn.innerHTML;
-                
-                // Show loading state
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Account...';
-                submitBtn.disabled = true;
-                
-                // Re-enable after a delay (in case of error)
-                setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }, 5000);
-            });
+    // Add event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        const fields = ['login', 'email', 'password', 'confirm_password', 'team', 'office'];
+        fields.forEach(field => {
+            document.getElementById(field).addEventListener('input', updatePasswordStrength);
         });
-
-        // Password visibility toggle
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const toggleBtn = document.querySelector('.password-toggle i');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleBtn.className = 'fas fa-eye-slash text-gray-400 hover:text-gray-600';
-            } else {
-                passwordInput.type = 'password';
-                toggleBtn.className = 'fas fa-eye text-gray-400 hover:text-gray-600';
-            }
-        }
-
-        // Real-time validation
-        document.getElementById('login').addEventListener('input', function() {
-            const username = this.value;
-            const submitBtn = document.getElementById('submit-btn');
-            
-            if (username.length < 3) {
-                this.classList.add('border-red-500');
-                submitBtn.disabled = true;
-            } else {
-                this.classList.remove('border-red-500');
-                submitBtn.disabled = false;
-            }
-        });
+    });
     </script>
 </body>
 </html>

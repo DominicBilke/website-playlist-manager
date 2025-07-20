@@ -1,13 +1,15 @@
 <?php
-require 'script/inc_start.php';
-require 'script/languages.php';
-require 'script/language_utils.php';
+require 'script/init.php';
 
-// Check if user is logged in
-if(!isset($_SESSION['id'])) {
-    header("Location: login.php");
-    exit;
-}
+// Require authentication
+$auth->requireAuth();
+
+// Get current user
+$currentUser = $auth->getCurrentUser();
+
+// Get error/success messages
+$error = $_GET['error'] ?? '';
+$success = $_GET['success'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $lang->getCurrentLanguage(); ?>">
@@ -17,32 +19,21 @@ if(!isset($_SESSION['id'])) {
     <title>Dashboard - Playlist Manager</title>
     <meta name="description" content="Manage your playlists and account settings">
     
-    <!-- Modern CSS Framework -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Custom Styles -->
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card-hover { transition: all 0.3s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        .sidebar { transition: all 0.3s ease; }
-        .sidebar.collapsed { width: 4rem; }
-        .main-content { transition: all 0.3s ease; }
-        .main-content.expanded { margin-left: 4rem; }
-    </style>
+    <link href="assets/css/main.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50">
     <!-- Sidebar -->
-    <div id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
         <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200">
             <div class="flex items-center">
-                <i class="fas fa-music text-2xl text-purple-600"></i>
+                <i class="fas fa-music text-2xl text-primary"></i>
                 <span class="ml-2 text-xl font-bold text-gray-900">Playlist Manager</span>
             </div>
             <button id="sidebar-toggle" class="text-gray-500 hover:text-gray-700">
@@ -52,41 +43,54 @@ if(!isset($_SESSION['id'])) {
         
         <nav class="mt-8 px-4">
             <div class="space-y-2">
-                <a href="account.php" class="flex items-center px-4 py-3 text-purple-600 bg-purple-50 rounded-lg">
+                <a href="account.php" class="flex items-center px-4 py-3 text-primary bg-primary-50 rounded-lg">
                     <i class="fas fa-tachometer-alt w-5 h-5"></i>
                     <span class="ml-3 font-medium"><?php echo $lang->get('dashboard'); ?></span>
                 </a>
-                <a href="spotify_manage.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                <a href="player.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary-50 rounded-lg transition-colors">
+                    <i class="fas fa-play w-5 h-5"></i>
+                    <span class="ml-3"><?php echo $lang->get('music_player'); ?></span>
+                </a>
+                <a href="spotify_play.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary-50 rounded-lg transition-colors">
                     <i class="fab fa-spotify w-5 h-5"></i>
                     <span class="ml-3"><?php echo $lang->get('spotify'); ?></span>
                 </a>
-                <a href="applemusic_manage.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                <a href="applemusic_play.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary-50 rounded-lg transition-colors">
                     <i class="fab fa-apple w-5 h-5"></i>
                     <span class="ml-3"><?php echo $lang->get('apple_music'); ?></span>
                 </a>
-                <a href="youtube_play.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                <a href="youtube_play.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary-50 rounded-lg transition-colors">
                     <i class="fab fa-youtube w-5 h-5"></i>
                     <span class="ml-3"><?php echo $lang->get('youtube_music'); ?></span>
                 </a>
-                <a href="amazon_play.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                <a href="amazon_play.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary-50 rounded-lg transition-colors">
                     <i class="fab fa-amazon w-5 h-5"></i>
                     <span class="ml-3"><?php echo $lang->get('amazon_music'); ?></span>
                 </a>
-                <a href="editaccount.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                <a href="editaccount.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary-50 rounded-lg transition-colors">
                     <i class="fas fa-cog w-5 h-5"></i>
                     <span class="ml-3"><?php echo $lang->get('settings'); ?></span>
                 </a>
+                <?php if ($auth->isAdmin()): ?>
+                <a href="admin.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary-50 rounded-lg transition-colors">
+                    <i class="fas fa-shield-alt w-5 h-5"></i>
+                    <span class="ml-3"><?php echo $lang->get('admin_panel'); ?></span>
+                </a>
+                <?php endif; ?>
             </div>
         </nav>
         
         <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
             <div class="flex items-center">
-                <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                     <i class="fas fa-user text-white text-sm"></i>
                 </div>
                 <div class="ml-3">
-                    <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($_SESSION['login']); ?></p>
-                    <p class="text-xs text-gray-500">Team <?php echo htmlspecialchars($_SESSION['team'] ?? 'N/A'); ?></p>
+                    <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($currentUser['login']); ?></p>
+                    <p class="text-xs text-gray-500">Team <?php echo htmlspecialchars($currentUser['team'] ?? 'N/A'); ?></p>
+                    <?php if ($auth->isAdmin()): ?>
+                    <p class="text-xs text-primary font-medium"><?php echo ucfirst($currentUser['role']); ?></p>
+                    <?php endif; ?>
                 </div>
             </div>
             <a href="script/logout.php" class="mt-3 flex items-center px-4 py-2 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
@@ -97,7 +101,7 @@ if(!isset($_SESSION['id'])) {
     </div>
 
     <!-- Main Content -->
-    <div id="main-content" class="main-content ml-64 min-h-screen">
+    <div id="main-content" class="ml-64 min-h-screen">
         <!-- Top Navigation -->
         <header class="bg-white shadow-sm border-b border-gray-200">
             <div class="flex items-center justify-between h-16 px-6">
@@ -126,58 +130,66 @@ if(!isset($_SESSION['id'])) {
         <main class="p-6">
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <i class="fab fa-spotify text-2xl text-green-600"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Spotify Status</p>
-                            <p class="text-2xl font-bold text-gray-900">
-                                <?php echo isset($_SESSION['playlist_id']) && $_SESSION['playlist_id'] ? 'Connected' : 'Not Connected'; ?>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
-                            <i class="fab fa-apple text-2xl text-pink-600"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Apple Music</p>
-                            <p class="text-2xl font-bold text-gray-900">
-                                <?php echo isset($_SESSION['apple_playlist_id']) && $_SESSION['apple_playlist_id'] ? 'Connected' : 'Not Connected'; ?>
-                            </p>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fab fa-spotify text-2xl text-green-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Spotify Status</p>
+                                <p class="text-2xl font-bold text-gray-900">
+                                    <?php echo isset($_SESSION['playlist_id']) && $_SESSION['playlist_id'] ? 'Connected' : 'Not Connected'; ?>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                            <i class="fab fa-youtube text-2xl text-red-600"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">YouTube Music</p>
-                            <p class="text-2xl font-bold text-gray-900">
-                                <?php echo isset($_SESSION['youtube_playlist_id']) && $_SESSION['youtube_playlist_id'] ? 'Connected' : 'Not Connected'; ?>
-                            </p>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
+                                <i class="fab fa-apple text-2xl text-pink-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Apple Music</p>
+                                <p class="text-2xl font-bold text-gray-900">
+                                    <?php echo isset($_SESSION['apple_playlist_id']) && $_SESSION['apple_playlist_id'] ? 'Connected' : 'Not Connected'; ?>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <i class="fab fa-amazon text-2xl text-orange-600"></i>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                <i class="fab fa-youtube text-2xl text-red-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">YouTube Music</p>
+                                <p class="text-2xl font-bold text-gray-900">
+                                    <?php echo isset($_SESSION['youtube_playlist_id']) && $_SESSION['youtube_playlist_id'] ? 'Connected' : 'Not Connected'; ?>
+                                </p>
+                            </div>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Amazon Music</p>
-                            <p class="text-2xl font-bold text-gray-900">
-                                <?php echo isset($_SESSION['amazon_playlist_id']) && $_SESSION['amazon_playlist_id'] ? 'Connected' : 'Not Connected'; ?>
-                            </p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <i class="fab fa-amazon text-2xl text-orange-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Amazon Music</p>
+                                <p class="text-2xl font-bold text-gray-900">
+                                    <?php echo isset($_SESSION['amazon_playlist_id']) && $_SESSION['amazon_playlist_id'] ? 'Connected' : 'Not Connected'; ?>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

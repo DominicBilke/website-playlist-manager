@@ -1,117 +1,70 @@
 <?php
-/*
+/**
  * Secure User Registration Script
  * Handles user registration with proper validation and security
  */
 
 session_start();
 
-// Include language system
+// Include required files
 require_once '../script/languages.php';
+require_once '../script/inc_start.php';
+require_once 'auth.php';
 
-$servername = "localhost";
-$username = "d03c87b1";
-$password = "WaBtpcMKcgf49wqp";
-$dbname = "d03c87b1";
+// Initialize language and auth
+$lang = new LanguageManager();
+$auth = new Auth($pdo, $lang);
 
+// Check if registration is enabled
 try {
-    $pdo = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-    $meldung = "meldung=" . urlencode($lang->get('database_error'));
-    header("Location: ../index.php?" . $meldung);
+    $stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'registration_enabled'");
+    $stmt->execute();
+    $result = $stmt->fetch();
+    $registrationEnabled = $result && $result['setting_value'] == '1';
+} catch (PDOException $e) {
+    $registrationEnabled = true; // Default to enabled
+}
+
+if (!$registrationEnabled) {
+    header("Location: ../signup.php?error=" . urlencode($lang->get('registration_disabled')));
     exit;
 }
 
-// Validate input
-$login = trim($_GET['login'] ?? '');
-$password = $_GET['password'] ?? '';
-$team = (int)($_GET['team'] ?? 0);
-$office = trim($_GET['office'] ?? '');
-
-$errors = [];
-
-// Validate username
-if (empty($login) || strlen($login) < 3) {
-    $errors[] = $lang->get('username_too_short');
-}
-
-if (!preg_match('/^[a-zA-Z0-9_]+$/', $login)) {
-    $errors[] = $lang->get('username_invalid');
-}
-
-// Validate password
-if (empty($password) || strlen($password) < 6) {
-    $errors[] = $lang->get('password_too_short');
-}
-
-// Validate team number
-if ($team <= 0) {
-    $errors[] = $lang->get('team_number_required');
-}
-
-// Validate office
-if (empty($office)) {
-    $errors[] = $lang->get('office_required');
-}
-
-// Check if username already exists
-if (empty($errors)) {
-    try {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE login = ?");
-        $stmt->execute([$login]);
-        
-        if ($stmt->fetch()) {
-            $errors[] = $lang->get('username_taken');
-        }
-    } catch(PDOException $e) {
-        $errors[] = $lang->get('database_error');
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = [
+        'login' => trim($_POST['login'] ?? ''),
+        'password' => $_POST['password'] ?? '',
+        'email' => trim($_POST['email'] ?? ''),
+        'team' => (int)($_POST['team'] ?? 0),
+        'office' => trim($_POST['office'] ?? '')
+    ];
+    
+    // Validate password confirmation
+    if ($data['password'] !== ($_POST['password_confirm'] ?? '')) {
+        header("Location: ../signup.php?error=" . urlencode($lang->get('passwords_dont_match')));
+        exit;
     }
-}
-
-// If there are errors, redirect back with error message
-if (!empty($errors)) {
-    $meldung = "meldung=" . urlencode(implode(', ', $errors));
-    header("Location: ../signup.php?" . $meldung);
+    
+    // Attempt registration
+    $result = $auth->register($data);
+    
+    if ($result['success']) {
+        // Auto-login after successful registration
+        $loginResult = $auth->login($data['login'], $_POST['password']);
+        
+        if ($loginResult['success']) {
+            header("Location: ../account.php?success=" . urlencode($lang->get('signup_successful')));
+        } else {
+            header("Location: ../login.php?success=" . urlencode($lang->get('signup_successful')));
+        }
+    } else {
+        header("Location: ../signup.php?error=" . urlencode($result['message']));
+    }
     exit;
 }
 
-// Create new user
-try {
-    // Hash password
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-    
-    // Insert new user
-    $stmt = $pdo->prepare("INSERT INTO users (login, password, team, office, days, daytime_from, daytime_to) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([
-        $login,
-        $hashedPassword,
-        $team,
-        $office,
-        '1,2,3,4,5', // Default: Monday to Friday
-        '09:00',     // Default start time
-        '17:00'      // Default end time
-    ]);
-    
-    // Get the new user's ID
-    $userId = $pdo->lastInsertId();
-    
-    // Set session variables
-    $_SESSION['id'] = $userId;
-    $_SESSION['login'] = $login;
-    $_SESSION['team'] = $team;
-    $_SESSION['office'] = $office;
-    $_SESSION['days'] = '1,2,3,4,5';
-    $_SESSION['daytime_from'] = '09:00';
-    $_SESSION['daytime_to'] = '17:00';
-    
-    $meldung = "meldung=" . urlencode($lang->get('signup_successful'));
-    
-} catch(PDOException $e) {
-    $meldung = "meldung=" . urlencode($lang->get('signup_error'));
-}
-
-// Redirect to dashboard
-header("Location: ../account.php?" . $meldung);
+// If not POST request, redirect to signup page
+header("Location: ../signup.php");
 exit;
 ?>

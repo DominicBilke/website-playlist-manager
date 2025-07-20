@@ -1,31 +1,24 @@
 <?php
-/*
- * Secure Logout Script
- * Properly destroys session and redirects user
+/**
+ * Logout Script
+ * Handles user logout with proper session cleanup
  */
 
 session_start();
 
-// Include language system
+// Include required files
 require_once '../script/languages.php';
+require_once '../script/inc_start.php';
+require_once 'auth.php';
 
-// Clear all session variables
-$_SESSION = array();
+// Initialize auth system
+$lang = new LanguageManager();
+$auth = new Auth($pdo, $lang);
 
-// Destroy the session cookie
-if (ini_get("session.use_cookies")) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
-}
+// Logout user
+$auth->logout();
 
-// Destroy the session
-session_destroy();
-
-// Redirect to home page with success message
-$meldung = "meldung=" . urlencode($lang->get('logout_successful'));
-header("Location: ../index.php?" . $meldung);
+// Redirect to login page with success message
+header("Location: ../login.php?success=" . urlencode($lang->get('logout_successful')));
 exit;
 ?>
