@@ -463,19 +463,52 @@ a:hover {
 
 /* Text Colors */
 .text-primary { color: var(--primary-600); }
+.text-primary-100 { color: var(--primary-100); }
 .text-success { color: var(--success-600); }
+.text-success-600 { color: var(--success-600); }
 .text-error { color: var(--error-600); }
 .text-warning { color: var(--warning-600); }
+.text-warning-600 { color: var(--warning-600); }
 .text-muted { color: var(--gray-500); }
+.text-green-600 { color: #16a34a; }
+.text-pink-600 { color: #db2777; }
+.text-red-600 { color: #dc2626; }
+.text-orange-600 { color: #ea580c; }
+.text-purple-600 { color: #9333ea; }
+.text-blue-600 { color: #2563eb; }
+.text-yellow-500 { color: #eab308; }
+.text-gray-900 { color: var(--gray-900); }
+.text-gray-600 { color: var(--gray-600); }
+.text-gray-500 { color: var(--gray-500); }
+.text-gray-400 { color: var(--gray-400); }
+.text-white { color: white; }
 
 /* Background Colors */
 .bg-primary { background-color: var(--primary-600); }
+.bg-primary-100 { background-color: var(--primary-100); }
 .bg-success { background-color: var(--success-600); }
 .bg-error { background-color: var(--error-600); }
 .bg-warning { background-color: var(--warning-600); }
+.bg-warning-600 { background-color: var(--warning-600); }
 .bg-white { background-color: white; }
 .bg-gray-50 { background-color: var(--gray-50); }
 .bg-gray-100 { background-color: var(--gray-100); }
+.bg-green-100 { background-color: #dcfce7; }
+.bg-pink-100 { background-color: #fce7f3; }
+.bg-red-100 { background-color: #fee2e2; }
+.bg-orange-100 { background-color: #fed7aa; }
+.bg-purple-100 { background-color: #f3e8ff; }
+.bg-blue-100 { background-color: #dbeafe; }
+.bg-yellow-500 { background-color: #eab308; }
+.bg-pink-500 { background-color: #ec4899; }
+.bg-purple-600 { background-color: #9333ea; }
+.bg-red-600 { background-color: #dc2626; }
+.bg-red-500 { background-color: #ef4444; }
+.bg-gray-200 { background-color: var(--gray-200); }
+.bg-gray-300 { background-color: var(--gray-300); }
+.bg-gray-500 { background-color: var(--gray-500); }
+.bg-gray-700 { background-color: var(--gray-700); }
+.bg-black { background-color: black; }
 
 /* Margins */
 .mb-0 { margin-bottom: 0; }
@@ -523,6 +556,129 @@ a:hover {
 .justify-between { justify-content: space-between; }
 .justify-start { justify-content: flex-start; }
 .justify-end { justify-content: flex-end; }
+
+/* Spacing */
+.space-x-2 > * + * { margin-left: 0.5rem; }
+.space-x-3 > * + * { margin-left: 0.75rem; }
+.space-x-4 > * + * { margin-left: 1rem; }
+.space-x-6 > * + * { margin-left: 1.5rem; }
+.space-y-1 > * + * { margin-top: 0.25rem; }
+.space-y-2 > * + * { margin-top: 0.5rem; }
+.space-y-3 > * + * { margin-top: 0.75rem; }
+.space-y-4 > * + * { margin-top: 1rem; }
+
+/* Width and Height */
+.w-full { width: 100%; }
+.w-8 { width: 2rem; }
+.w-10 { width: 2.5rem; }
+.w-12 { width: 3rem; }
+.w-16 { width: 4rem; }
+.w-32 { width: 8rem; }
+.w-48 { width: 12rem; }
+.w-64 { width: 16rem; }
+.h-8 { height: 2rem; }
+.h-10 { height: 2.5rem; }
+.h-12 { height: 3rem; }
+.h-16 { height: 4rem; }
+.h-600 { height: 600px; }
+
+/* Position */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.sticky { position: sticky; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.inset-y-0 { top: 0; bottom: 0; }
+.left-0 { left: 0; }
+.right-0 { right: 0; }
+.top-0 { top: 0; }
+.bottom-0 { bottom: 0; }
+
+/* Z-Index */
+.z-10 { z-index: 10; }
+.z-50 { z-index: 50; }
+
+/* Overflow */
+.overflow-hidden { overflow: hidden; }
+
+/* Border */
+.border { border-width: 1px; }
+.border-b { border-bottom-width: 1px; }
+.border-t { border-top-width: 1px; }
+.border-gray-200 { border-color: var(--gray-200); }
+.border-gray-300 { border-color: var(--gray-300); }
+
+/* Opacity */
+.opacity-20 { opacity: 0.2; }
+
+/* Gradients */
+.bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
+.from-primary-600 { --tw-gradient-from: var(--primary-600); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgb(2 132 199 / 0)); }
+.via-primary-700 { --tw-gradient-stops: var(--tw-gradient-from), var(--primary-700), var(--tw-gradient-to, rgb(3 105 161 / 0)); }
+.to-primary-800 { --tw-gradient-to: var(--primary-800); }
+
+/* Transform */
+.translate-y-0 { transform: translateY(0); }
+.translate-y-2 { transform: translateY(0.5rem); }
+.translate-y-10 { transform: translateY(2.5rem); }
+
+/* Font Weight */
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+
+/* Font Size */
+.text-sm { font-size: 0.875rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+.text-4xl { font-size: 2.25rem; }
+.text-5xl { font-size: 3rem; }
+.text-6xl { font-size: 3.75rem; }
+
+/* Line Height */
+.leading-relaxed { line-height: 1.625; }
+
+/* Max Width */
+.max-w-3xl { max-width: 48rem; }
+.max-w-4xl { max-width: 56rem; }
+.max-w-md { max-width: 28rem; }
+.max-w-lg { max-width: 32rem; }
+
+/* Grid */
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+
+/* Responsive */
+@media (min-width: 640px) {
+  .sm\:flex-row { flex-direction: row; }
+  .sm\:text-2xl { font-size: 1.5rem; }
+  .sm\:text-6xl { font-size: 3.75rem; }
+}
+
+@media (min-width: 768px) {
+  .md\:text-2xl { font-size: 1.5rem; }
+  .md\:text-4xl { font-size: 2.25rem; }
+  .md\:text-5xl { font-size: 3rem; }
+  .md\:text-6xl { font-size: 3.75rem; }
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lg\:col-span-2 { grid-column: span 2 / span 2; }
+  .lg\:col-span-3 { grid-column: span 3 / span 3; }
+}
 
 /* ========================================
    PLATFORM-SPECIFIC STYLES

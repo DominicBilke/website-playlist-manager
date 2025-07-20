@@ -8,195 +8,187 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <!-- Custom Styles -->
     <link href="assets/css/main.css" rel="stylesheet">
 </head>
-<body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="header-brand">
-                    <i class="fas fa-music text-primary"></i>
-                    <span>Playlist Manager</span>
-                </div>
-                <nav class="header-nav">
-                    <a href="#" class="btn btn-primary btn-sm">Dashboard</a>
-                    <a href="#" class="btn btn-secondary btn-sm">Settings</a>
-                </nav>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-gray-900 mb-8">Design System Test</h1>
+        
+        <!-- Colors Test -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Colors</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-primary text-white p-4 rounded">Primary</div>
+                <div class="bg-success text-white p-4 rounded">Success</div>
+                <div class="bg-error text-white p-4 rounded">Error</div>
+                <div class="bg-warning text-white p-4 rounded">Warning</div>
             </div>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="main">
-        <div class="container">
-            <h1 class="text-center mb-8">Design System Test</h1>
-            
-            <!-- Cards Section -->
-            <section class="mb-8">
-                <h2 class="mb-4">Cards</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Basic Card</h3>
-                        </div>
-                        <div class="card-body">
-                            <p>This is a basic card with header, body, and footer.</p>
-                        </div>
-                        <div class="card-footer">
-                            <button class="btn btn-primary">Action</button>
-                        </div>
-                    </div>
-                    
-                    <div class="card platform-card spotify">
-                        <div class="card-body text-center">
-                            <i class="fab fa-spotify text-3xl text-green-600 mb-4"></i>
-                            <h3>Spotify</h3>
-                            <p>Platform card with custom styling.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="card platform-card apple">
-                        <div class="card-body text-center">
-                            <i class="fab fa-apple text-3xl text-pink-600 mb-4"></i>
-                            <h3>Apple Music</h3>
-                            <p>Another platform card example.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Buttons Section -->
-            <section class="mb-8">
-                <h2 class="mb-4">Buttons</h2>
-                <div class="space-y-4">
-                    <div class="flex flex-wrap gap-4">
-                        <button class="btn btn-primary">Primary Button</button>
-                        <button class="btn btn-secondary">Secondary Button</button>
-                        <button class="btn btn-success">Success Button</button>
-                        <button class="btn btn-danger">Danger Button</button>
-                        <button class="btn btn-warning">Warning Button</button>
-                    </div>
-                    <div class="flex flex-wrap gap-4">
-                        <button class="btn btn-primary btn-sm">Small Primary</button>
-                        <button class="btn btn-primary btn-lg">Large Primary</button>
-                        <button class="btn btn-primary" disabled>Disabled</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Forms Section -->
-            <section class="mb-8">
-                <h2 class="mb-4">Forms</h2>
-                <div class="max-w-md">
-                    <div class="card">
-                        <div class="card-body">
-                            <form class="space-y-4">
-                                <div class="form-group">
-                                    <label for="username" class="form-label">Username</label>
-                                    <div class="relative">
-                                        <input type="text" id="username" class="form-input pl-10" placeholder="Enter username">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <i class="fas fa-user text-gray-400"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="email" class="form-label">Email</label>
-                                    <div class="relative">
-                                        <input type="email" id="email" class="form-input pl-10" placeholder="Enter email">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <i class="fas fa-envelope text-gray-400"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="password" class="form-label">Password</label>
-                                    <div class="relative">
-                                        <input type="password" id="password" class="form-input pl-10 pr-10" placeholder="Enter password">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <i class="fas fa-lock text-gray-400"></i>
-                                        </div>
-                                        <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                            <i class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <button type="submit" class="btn btn-primary w-full">Submit</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Alerts Section -->
-            <section class="mb-8">
-                <h2 class="mb-4">Alerts</h2>
-                <div class="space-y-4">
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i>
-                        This is a success alert message.
-                    </div>
-                    <div class="alert alert-error">
-                        <i class="fas fa-exclamation-circle"></i>
-                        This is an error alert message.
-                    </div>
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        This is a warning alert message.
-                    </div>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        This is an info alert message.
-                    </div>
-                </div>
-            </section>
-
-            <!-- Grid Section -->
-            <section class="mb-8">
-                <h2 class="mb-4">Grid System</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-primary-100 p-4 rounded text-center">Column 1</div>
-                    <div class="bg-success-100 p-4 rounded text-center">Column 2</div>
-                    <div class="bg-warning-100 p-4 rounded text-center">Column 3</div>
-                    <div class="bg-error-100 p-4 rounded text-center">Column 4</div>
-                </div>
-            </section>
-
-            <!-- Utilities Section -->
-            <section class="mb-8">
-                <h2 class="mb-4">Utility Classes</h2>
-                <div class="space-y-4">
-                    <div class="text-center">
-                        <p class="text-primary">Primary text color</p>
-                        <p class="text-success">Success text color</p>
-                        <p class="text-error">Error text color</p>
-                        <p class="text-warning">Warning text color</p>
-                        <p class="text-muted">Muted text color</p>
-                    </div>
-                    
-                    <div class="flex justify-center space-x-4">
-                        <div class="bg-primary p-2 rounded text-white">Primary BG</div>
-                        <div class="bg-success p-2 rounded text-white">Success BG</div>
-                        <div class="bg-error p-2 rounded text-white">Error BG</div>
-                        <div class="bg-warning p-2 rounded text-white">Warning BG</div>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-auto">
-        <div class="container">
-            <div class="py-8 text-center">
-                <p class="text-gray-600">&copy; 2024 Playlist Manager. All rights reserved.</p>
+        </section>
+        
+        <!-- Buttons Test -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Buttons</h2>
+            <div class="flex flex-wrap gap-4">
+                <button class="btn btn-primary">Primary Button</button>
+                <button class="btn btn-secondary">Secondary Button</button>
+                <button class="btn btn-success">Success Button</button>
+                <button class="btn btn-warning">Warning Button</button>
+                <button class="btn btn-danger">Danger Button</button>
             </div>
-        </div>
-    </footer>
+        </section>
+        
+        <!-- Cards Test -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Cards</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-lg font-semibold">Card Title</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>This is a test card with some content.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <p>Another test card without header.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-lg font-semibold">Card with Footer</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Card content here.</p>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary btn-sm">Action</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Forms Test -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Forms</h2>
+            <div class="max-w-md">
+                <div class="form-group">
+                    <label class="form-label">Test Input</label>
+                    <input type="text" class="form-input" placeholder="Enter text here">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" placeholder="Enter email">
+                </div>
+                <button class="btn btn-primary">Submit</button>
+            </div>
+        </section>
+        
+        <!-- Alerts Test -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Alerts</h2>
+            <div class="space-y-4">
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <span>This is a success alert</span>
+                </div>
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>This is an error alert</span>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>This is a warning alert</span>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>This is an info alert</span>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Platform Cards Test -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Platform Cards</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card platform-card spotify">
+                    <div class="card-body text-center">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fab fa-spotify text-3xl text-green-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Spotify</h3>
+                        <p class="text-gray-600 mb-4">Full integration with automated playback</p>
+                        <button class="btn btn-primary w-full">Connect</button>
+                    </div>
+                </div>
+                
+                <div class="card platform-card apple">
+                    <div class="card-body text-center">
+                        <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fab fa-apple text-3xl text-pink-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Apple Music</h3>
+                        <p class="text-gray-600 mb-4">MusicKit JS integration</p>
+                        <button class="btn btn-primary w-full">Connect</button>
+                    </div>
+                </div>
+                
+                <div class="card platform-card youtube">
+                    <div class="card-body text-center">
+                        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fab fa-youtube text-3xl text-red-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">YouTube Music</h3>
+                        <p class="text-gray-600 mb-4">IFrame API integration</p>
+                        <button class="btn btn-primary w-full">Connect</button>
+                    </div>
+                </div>
+                
+                <div class="card platform-card amazon">
+                    <div class="card-body text-center">
+                        <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-music text-3xl text-orange-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Amazon Music</h3>
+                        <p class="text-gray-600 mb-4">Manual control with tracking</p>
+                        <button class="btn btn-primary w-full">Connect</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Animations Test -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Animations</h2>
+            <div class="flex gap-4">
+                <div class="animate-fade-in bg-primary text-white p-4 rounded">Fade In</div>
+                <div class="animate-slide-in bg-success text-white p-4 rounded">Slide In</div>
+                <div class="animate-pulse bg-warning text-white p-4 rounded">Pulse</div>
+                <div class="animate-spin bg-error text-white p-4 rounded w-16 h-16 flex items-center justify-center">
+                    <i class="fas fa-spinner"></i>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Responsive Test -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Responsive Design</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-gray-200 p-4 rounded text-center">
+                    <p class="text-sm md:text-base lg:text-lg">Responsive text</p>
+                </div>
+                <div class="bg-gray-200 p-4 rounded text-center">
+                    <p class="text-sm md:text-base lg:text-lg">Responsive text</p>
+                </div>
+                <div class="bg-gray-200 p-4 rounded text-center">
+                    <p class="text-sm md:text-base lg:text-lg">Responsive text</p>
+                </div>
+            </div>
+        </section>
+    </div>
 </body>
 </html> 

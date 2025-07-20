@@ -21,10 +21,11 @@ $applemusic->Connect();
     <title>Apple Music Player - Playlist Manager</title>
     <meta name="description" content="Play your Apple Music playlists with automated scheduling">
     
-    <!-- Modern CSS Framework -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Apple MusicKit -->
     <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js" data-web-components async></script>
