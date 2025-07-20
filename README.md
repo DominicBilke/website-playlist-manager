@@ -1,523 +1,284 @@
-# 🎵 **Playlist Manager**
+# 🎵 Playlist Manager
 
-> **The most advanced solution for music streaming automation and playlist management**
+A sophisticated multi-platform music streaming automation and playlist management system built with PHP. This application allows users to manage and automate music playback across multiple streaming platforms with intelligent scheduling and analytics.
 
-[![PHP Version](https://img.shields.io/badge/PHP-8.0+-purple.svg)](https://php.net)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.txt)
-[![Multilingual](https://img.shields.io/badge/Languages-German%20%7C%20English-blue.svg)](https://github.com/playlist-manager)
-[![Platforms](https://img.shields.io/badge/Platforms-Spotify%20%7C%20Apple%20Music%20%7C%20YouTube%20Music%20%7C%20Amazon%20Music-orange.svg)](https://playlist-manager.de)
+## 🌟 Features
 
-## 📖 **Table of Contents**
+### 🎧 Multi-Platform Support
+- **Spotify** - Full integration with Spotify Web API
+- **Apple Music** - Apple MusicKit integration
+- **YouTube Music** - YouTube Music API support
+- **Amazon Music** - Amazon Music integration
 
-- [Overview](#-overview)
-- [Features](#-features)
-- [Supported Platforms](#-supported-platforms)
-- [Screenshots](#-screenshots)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Usage](#-usage)
-- [API Integration](#-api-integration)
-- [Multilingual Support](#-multilingual-support)
-- [Security](#-security)
-- [Performance](#-performance)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Support](#-support)
+### 🔐 User Management
+- Secure user registration and authentication
+- Team-based user organization
+- Office location management
+- User preferences and settings
 
-## 🎯 **Overview**
+### ⏰ Intelligent Scheduling
+- Customizable play schedules
+- Random day and time selection
+- Time range configuration
+- Automatic playlist management
 
-Playlist Manager is a comprehensive web application that enables automated playlist management and intelligent music streaming across multiple platforms. Built with modern PHP 8+ and featuring a responsive, multilingual interface, it provides users with powerful tools for managing their music libraries with smart scheduling and analytics.
+### 📊 Analytics & Statistics
+- Listening history tracking
+- Platform usage statistics
+- User behavior analytics
+- Performance metrics
 
-### **Key Benefits**
-- 🎵 **Multi-Platform Support**: Manage playlists across Spotify, Apple Music, YouTube Music, and Amazon Music
-- 🤖 **Intelligent Automation**: Smart scheduling and automated playback control
-- 📊 **Advanced Analytics**: Detailed listening statistics and performance tracking
-- 🌍 **Multilingual**: Full German and English support
-- 📱 **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- 🔒 **Secure**: Enterprise-grade security with GDPR compliance
+### 🌍 Multi-Language Support
+- German (Deutsch)
+- English
+- Easy language switching
+- Localized content
 
-## ✨ **Features**
+## 🏗️ Technology Stack
 
-### **🎵 Music Platform Integration**
-- **Spotify**: Full playlist management with automated playback
-- **Apple Music**: Seamless integration with MusicKit JS
-- **YouTube Music**: Playlist synchronization and control
-- **Amazon Music**: Playlist management with manual control options
+### Backend
+- **PHP 8+** with modern OOP practices
+- **MySQL Database** for user data and statistics
+- **Composer** for dependency management
+- **Session-based authentication** with security features
 
-### **🤖 Automation & Scheduling**
-- **Smart Scheduling**: Intelligent time-based playlist activation
-- **Automated Playback**: Hands-free music streaming
-- **Random Intervals**: Dynamic play/pause timing (61-600 seconds)
-- **Day Selection**: Customizable active days and time windows
-- **Shuffle & Repeat**: Advanced playback controls
+### Frontend
+- **Modern CSS** with Tailwind CSS framework
+- **Responsive design** with mobile-first approach
+- **Font Awesome** icons
+- **Chart.js** for data visualization
 
-### **📊 Analytics & Statistics**
-- **Listening Time Tracking**: Detailed usage statistics
-- **Performance Metrics**: Platform-specific analytics
-- **Time Window Monitoring**: Schedule adherence tracking
-- **Export Capabilities**: Data export in multiple formats
+### APIs & Integrations
+- **Spotify Web API** via `jwilsson/spotify-web-api-php`
+- **Apple Music API** via `pouler/apple-music-api`
+- **YouTube Music API** via `ytmusicapi`
+- **Google APIs** for additional services
 
-### **👤 User Management**
-- **Secure Authentication**: Password hashing and validation
-- **Profile Management**: Personal information and preferences
-- **Account Settings**: Platform connection management
-- **Data Privacy**: GDPR-compliant data handling
+## 📁 Project Structure
 
-### **🎨 Modern UI/UX**
-- **Glass Morphism Design**: Contemporary visual aesthetics
-- **Responsive Layout**: Mobile-first design approach
-- **Dark Theme**: Eye-friendly dark color scheme
-- **Smooth Animations**: Enhanced user experience
-- **Accessibility**: WCAG 2.1 AA compliant
-
-## 🎵 **Supported Platforms**
-
-| Platform | Playlist Management | Automated Playback | API Integration | Status |
-|----------|-------------------|-------------------|-----------------|---------|
-| **Spotify** | ✅ Full Support | ✅ Automated | ✅ Web API | 🟢 Active |
-| **Apple Music** | ✅ Full Support | ✅ Automated | ✅ MusicKit JS | 🟢 Active |
-| **YouTube Music** | ✅ Full Support | ⚠️ Manual Control | ✅ IFrame API | 🟡 Limited |
-| **Amazon Music** | ✅ Full Support | ⚠️ Manual Control | ⚠️ Limited API | 🟡 Limited |
-
-## 📸 **Screenshots**
-
-### **Dashboard Overview**
-![Dashboard](https://via.placeholder.com/800x400/6366f1/ffffff?text=Dashboard+Overview)
-
-### **Platform Management**
-![Platform Management](https://via.placeholder.com/800x400/8b5cf6/ffffff?text=Platform+Management)
-
-### **Analytics Dashboard**
-![Analytics](https://via.placeholder.com/800x400/06b6d4/ffffff?text=Analytics+Dashboard)
-
-## 🚀 **Installation**
-
-### **Prerequisites**
-- **PHP**: 8.0 or higher
-- **Web Server**: Apache 2.4+ or Nginx 1.18+
-- **Database**: MySQL 8.0+ or MariaDB 10.5+
-- **SSL Certificate**: Required for API integrations
-- **Composer**: For dependency management
-
-### **Quick Start**
-
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/playlist-manager/playlist-manager.git
-   cd playlist-manager/httpdocs
-   ```
-
-2. **Install Dependencies**
-   ```bash
-   composer install
-   ```
-
-3. **Configure Database**
-   ```bash
-   # Create database
-   mysql -u root -p -e "CREATE DATABASE playlist_manager;"
-   
-   # Import schema (if available)
-   mysql -u root -p playlist_manager < database/schema.sql
-   ```
-
-4. **Set Permissions**
-   ```bash
-   chmod 755 assets/
-   chmod 644 .htaccess
-   chmod 644 favicon.ico
-   ```
-
-5. **Configure Environment**
-   ```bash
-   # Copy configuration template
-   cp config/config.example.php config/config.php
-   
-   # Edit configuration
-   nano config/config.php
-   ```
-
-6. **Access Application**
-   ```
-   http://localhost/playlist-manager/
-   ```
-
-### **Docker Installation**
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  web:
-    image: php:8.1-apache
-    ports:
-      - "8080:80"
-    volumes:
-      - ./httpdocs:/var/www/html
-    environment:
-      - APACHE_DOCUMENT_ROOT=/var/www/html
+```
+website playlist-manager/
+├── assets/
+│   ├── css/
+│   │   ├── main.css              # Custom styles
+│   │   └── fontawesome-all.min.css
+│   ├── js/
+│   │   └── main.js               # Main JavaScript functionality
+│   └── webfonts/                 # Font Awesome fonts
+├── components/
+│   ├── header.php                # Site header with navigation
+│   ├── footer.php                # Site footer
+│   └── language_switcher.php     # Language switching component
+├── database/
+│   └── schema.sql                # Database schema
+├── images/                       # Static images and icons
+├── script/
+│   ├── inc_start.php             # Application initialization
+│   ├── languages.php             # Language management system
+│   ├── language_utils.php        # Language utility functions
+│   ├── accounts.php              # User account management
+│   ├── signup.php                # User registration
+│   ├── logout.php                # User logout
+│   ├── Spotify.php               # Spotify integration
+│   ├── AppleMusic.php            # Apple Music integration
+│   ├── vendor/                   # Composer dependencies
+│   └── ytmusicapi/               # YouTube Music API
+├── index.php                     # Homepage
+├── login.php                     # Login page
+├── signup.php                    # Registration page
+├── account.php                   # User dashboard
+├── spotify_play.php              # Spotify management
+├── applemusic_play.php           # Apple Music management
+├── amazon_play.php               # Amazon Music management
+├── datenschutz.php               # Privacy policy
+├── test_language.php             # Language testing page
+├── LANGUAGE_SYSTEM.md            # Language system documentation
+├── composer.json                 # PHP dependencies
+└── README.md                     # This file
 ```
 
-## ⚙️ **Configuration**
+## 🚀 Installation & Setup
 
-### **Database Configuration**
-```php
-// config/config.php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'playlist_manager');
-define('DB_USER', 'your_username');
-define('DB_PASS', 'your_password');
-define('DB_CHARSET', 'utf8mb4');
-```
+### Prerequisites
+- PHP 8.0 or higher
+- MySQL 5.7 or higher
+- Web server (Apache/Nginx)
+- Composer
 
-### **API Credentials**
-
-#### **Spotify API**
-```php
-define('SPOTIFY_CLIENT_ID', 'your_spotify_client_id');
-define('SPOTIFY_CLIENT_SECRET', 'your_spotify_client_secret');
-define('SPOTIFY_REDIRECT_URI', 'https://yourdomain.com/spotify_callback.php');
-```
-
-#### **Apple Music API**
-```php
-define('APPLE_MUSIC_TEAM_ID', 'your_team_id');
-define('APPLE_MUSIC_KEY_ID', 'your_key_id');
-define('APPLE_MUSIC_PRIVATE_KEY', 'path/to/AuthKey_XXXXX.p8');
-```
-
-#### **YouTube Music API**
-```php
-define('YOUTUBE_API_KEY', 'your_youtube_api_key');
-define('YOUTUBE_CLIENT_ID', 'your_youtube_client_id');
-define('YOUTUBE_CLIENT_SECRET', 'your_youtube_client_secret');
-```
-
-#### **Amazon Music API**
-```php
-define('AMAZON_CLIENT_ID', 'your_amazon_client_id');
-define('AMAZON_CLIENT_SECRET', 'your_amazon_client_secret');
-define('AMAZON_REDIRECT_URI', 'https://yourdomain.com/amazon_callback.php');
-```
-
-### **Security Configuration**
-```php
-// Session security
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 1);
-ini_set('session.use_strict_mode', 1);
-
-// CSRF protection
-define('CSRF_TOKEN_SECRET', 'your_random_secret_key');
-```
-
-## 📖 **Usage**
-
-### **Getting Started**
-
-1. **Create Account**
-   - Visit the signup page
-   - Provide email and password
-   - Verify email address
-
-2. **Connect Music Platforms**
-   - Go to Account Settings
-   - Click "Connect" for each platform
-   - Authorize with your music accounts
-
-3. **Configure Playlists**
-   - Select playlists for each platform
-   - Set playback preferences
-   - Configure scheduling options
-
-4. **Start Automation**
-   - Enable automated playback
-   - Set active time windows
-   - Monitor statistics
-
-### **Platform-Specific Setup**
-
-#### **Spotify**
-```javascript
-// Automatic playback with full control
-const spotifyPlayer = new SpotifyPlayer({
-    clientId: 'your_client_id',
-    playlistId: 'your_playlist_id',
-    autoPlay: true,
-    shuffle: true,
-    repeat: 'all'
-});
-```
-
-#### **Apple Music**
-```javascript
-// MusicKit JS integration
-const musicKit = new MusicKit({
-    developerToken: 'your_developer_token',
-    appName: 'Playlist Manager',
-    buildVer: '1.0.0'
-});
-```
-
-#### **YouTube Music**
-```html
-<!-- IFrame player with manual controls -->
-<iframe 
-    src="https://www.youtube.com/embed/playlist?list=YOUR_PLAYLIST_ID"
-    width="100%" 
-    height="400"
-    frameborder="0"
-    allow="autoplay; encrypted-media">
-</iframe>
-```
-
-#### **Amazon Music**
-```html
-<!-- Amazon Music widget -->
-<div id="amazon-music-player">
-    <!-- Manual control required due to API limitations -->
-</div>
-```
-
-## 🔌 **API Integration**
-
-### **REST API Endpoints**
-
-#### **Authentication**
-```http
-POST /api/auth/login
-POST /api/auth/logout
-POST /api/auth/register
-GET  /api/auth/verify
-```
-
-#### **Playlist Management**
-```http
-GET    /api/playlists
-POST   /api/playlists
-PUT    /api/playlists/{id}
-DELETE /api/playlists/{id}
-GET    /api/playlists/{id}/tracks
-```
-
-#### **Analytics**
-```http
-GET /api/analytics/listening-time
-GET /api/analytics/platform-stats
-GET /api/analytics/user-activity
-GET /api/analytics/export
-```
-
-### **Webhook Support**
-```php
-// Webhook endpoint for real-time updates
-POST /api/webhooks/spotify
-POST /api/webhooks/apple-music
-POST /api/webhooks/youtube
-POST /api/webhooks/amazon
-```
-
-## 🌍 **Multilingual Support**
-
-### **Supported Languages**
-- **German (de)**: Primary language with full legal compliance
-- **English (en)**: International support
-
-### **Language Detection**
-```php
-// Automatic browser language detection
-$lang = new LanguageManager();
-$currentLang = $lang->getCurrentLanguage();
-
-// Manual language switching
-$lang->setLanguage('de'); // German
-$lang->setLanguage('en'); // English
-```
-
-### **Translation System**
-```php
-// Using translation keys
-echo $lang->get('dashboard'); // Dashboard / Dashboard
-echo $lang->get('spotify');   // Spotify / Spotify
-
-// With parameters
-echo $lang->get('playing_seconds', ['seconds' => 120]); // Playing (120s) / Spielt (120s)
-```
-
-### **Adding New Languages**
-```php
-// Add new language to languages.php
-'fr' => [
-    'dashboard' => 'Tableau de bord',
-    'spotify' => 'Spotify',
-    // ... more translations
-]
-```
-
-## 🔒 **Security**
-
-### **Authentication & Authorization**
-- **Password Hashing**: bcrypt with salt
-- **Session Management**: Secure session handling
-- **CSRF Protection**: Cross-site request forgery prevention
-- **Input Validation**: Comprehensive input sanitization
-- **SQL Injection Prevention**: Prepared statements
-
-### **Data Protection**
-- **GDPR Compliance**: Full data protection compliance
-- **Data Encryption**: Sensitive data encryption at rest
-- **Privacy Policy**: Comprehensive privacy information
-- **User Rights**: Data subject rights implementation
-
-### **Security Headers**
-```apache
-# .htaccess security headers
-Header always set X-Content-Type-Options nosniff
-Header always set X-Frame-Options DENY
-Header always set X-XSS-Protection "1; mode=block"
-Header always set Referrer-Policy "strict-origin-when-cross-origin"
-Header always set Content-Security-Policy "default-src 'self'"
-```
-
-## ⚡ **Performance**
-
-### **Optimization Features**
-- **Asset Minification**: CSS and JavaScript compression
-- **Image Optimization**: WebP format support
-- **Caching**: Browser and server-side caching
-- **CDN Ready**: Content delivery network support
-- **Lazy Loading**: On-demand resource loading
-
-### **Performance Metrics**
-- **Page Load Time**: < 2 seconds
-- **Lighthouse Score**: 90+ (Performance, Accessibility, Best Practices)
-- **Mobile Performance**: Optimized for mobile networks
-- **SEO Score**: 95+ with structured data
-
-### **Caching Strategy**
-```apache
-# Browser caching
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType text/css "access plus 1 year"
-    ExpiresByType application/javascript "access plus 1 year"
-    ExpiresByType image/png "access plus 1 year"
-    ExpiresByType image/jpg "access plus 1 year"
-</IfModule>
-```
-
-## 🤝 **Contributing**
-
-We welcome contributions! Please follow these guidelines:
-
-### **Development Setup**
+### 1. Clone the Repository
 ```bash
-# Fork the repository
-git clone https://github.com/your-username/playlist-manager.git
-
-# Create feature branch
-git checkout -b feature/amazing-feature
-
-# Make changes and commit
-git commit -m "Add amazing feature"
-
-# Push to branch
-git push origin feature/amazing-feature
-
-# Create Pull Request
+git clone <repository-url>
+cd website-playlist-manager
 ```
 
-### **Code Standards**
-- **PHP**: PSR-12 coding standards
-- **JavaScript**: ESLint configuration
-- **CSS**: Stylelint configuration
-- **Documentation**: PHPDoc comments
-
-### **Testing**
+### 2. Install Dependencies
 ```bash
-# Run PHP tests
-composer test
-
-# Run JavaScript tests
-npm test
-
-# Run accessibility tests
-npm run a11y
+composer install
 ```
 
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details.
-
-```
-MIT License
-
-Copyright (c) 2024 Playlist Manager
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+### 3. Database Setup
+```bash
+# Import the database schema
+mysql -u your_username -p < database/schema.sql
 ```
 
-## 🆘 **Support**
+### 4. Configuration
+Update the database connection settings in `script/inc_start.php`:
+```php
+$servername = "localhost";
+$username = "your_db_username";
+$password = "your_db_password";
+$dbname = "your_database_name";
+```
 
-### **Documentation**
-- **User Guide**: [docs/user-guide.md](docs/user-guide.md)
-- **API Documentation**: [docs/api.md](docs/api.md)
-- **Developer Guide**: [docs/developer-guide.md](docs/developer-guide.md)
-- **Legal Pages**: [impressum.php](impressum.php), [privacy.php](privacy.php)
+### 5. Platform API Setup
 
-### **Contact Information**
-- **Website**: [https://playlist-manager.de](https://playlist-manager.de)
-- **Email**: support@playlist-manager.de
-- **Phone**: +49 (0) 123 456789
-- **GitHub Issues**: [https://github.com/playlist-manager/issues](https://github.com/playlist-manager/issues)
+#### Spotify
+1. Create a Spotify Developer account
+2. Create a new application
+3. Add your client ID and secret to the configuration
 
-### **Community**
-- **Discord**: [Join our Discord server](https://discord.gg/playlist-manager)
-- **Twitter**: [@PlaylistManager](https://twitter.com/PlaylistManager)
-- **Blog**: [https://blog.playlist-manager.de](https://blog.playlist-manager.de)
+#### Apple Music
+1. Register for Apple Developer Program
+2. Create a MusicKit key
+3. Configure the integration
 
-### **FAQ**
-- **Q**: How do I connect my Spotify account?
-- **A**: Go to Account Settings → Connect Spotify → Authorize with your Spotify account.
+#### YouTube Music
+1. Set up Google Cloud Project
+2. Enable YouTube Data API
+3. Configure API credentials
 
-- **Q**: Can I use multiple music platforms simultaneously?
-- **A**: Yes! You can connect and manage playlists from all supported platforms.
+### 6. Web Server Configuration
+Ensure your web server is configured to serve PHP files and has the necessary permissions.
 
-- **Q**: Is my data secure?
-- **A**: Absolutely. We use industry-standard encryption and are fully GDPR compliant.
+## 🔧 Configuration
 
-- **Q**: What if I encounter API limitations?
-- **A**: Some platforms have API restrictions. We provide manual control options where automated control isn't available.
+### Environment Variables
+Create a `.env` file in the root directory:
+```env
+DB_HOST=localhost
+DB_NAME=your_database
+DB_USER=your_username
+DB_PASS=your_password
+
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+
+APPLE_MUSIC_KEY=your_apple_music_key
+YOUTUBE_API_KEY=your_youtube_api_key
+```
+
+### Language Configuration
+The application supports multiple languages. Language files are located in `script/languages.php`. To add a new language:
+
+1. Add the language code to the `$supportedLanguages` array
+2. Add translations to the `$translations` array
+3. Update the language detection logic if needed
+
+## 📖 Usage
+
+### User Registration
+1. Visit the signup page
+2. Fill in your details (username, password, team, office)
+3. Accept terms and conditions
+4. Click "Create Account"
+
+### Platform Connection
+1. Log in to your account
+2. Navigate to the desired platform page (Spotify, Apple Music, etc.)
+3. Click "Connect" and follow the authorization process
+4. Configure your playlist settings
+
+### Schedule Management
+1. Go to your account dashboard
+2. Set your preferred playing days and times
+3. Enable/disable random scheduling
+4. Save your preferences
+
+### Language Switching
+- Use the language switcher in the header or footer
+- Languages are automatically detected based on browser settings
+- Language preference is saved in the session
+
+## 🔒 Security Features
+
+- **Password Hashing**: All passwords are hashed using PHP's `password_hash()`
+- **SQL Injection Prevention**: Prepared statements for all database queries
+- **Session Security**: Secure session handling with proper cleanup
+- **Input Validation**: Comprehensive input validation and sanitization
+- **CSRF Protection**: Cross-site request forgery protection
+- **XSS Prevention**: Output escaping and content security policies
+
+## 🧪 Testing
+
+### Language System Testing
+Visit `test_language.php` to test the language switching functionality.
+
+### Database Testing
+Run the database schema to ensure all tables are created correctly.
+
+### API Testing
+Test platform integrations by connecting to each service.
+
+## 📝 API Documentation
+
+### Authentication Endpoints
+- `POST /login.php` - User login
+- `POST /signup.php` - User registration
+- `GET /script/logout.php` - User logout
+
+### Platform Endpoints
+- `GET /spotify_play.php` - Spotify management
+- `GET /applemusic_play.php` - Apple Music management
+- `GET /amazon_play.php` - Amazon Music management
+
+### User Management
+- `GET /account.php` - User dashboard
+- `GET /editaccount.php` - Account settings
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Check the documentation in `LANGUAGE_SYSTEM.md`
+- Review the code comments
+- Create an issue in the repository
+
+## 🔄 Changelog
+
+### Version 2.0.0 (Current)
+- Complete language system revamp
+- Enhanced security features
+- Improved user interface
+- Better error handling
+- Comprehensive documentation
+
+### Version 1.0.0
+- Initial release
+- Basic playlist management
+- Multi-platform support
+- User authentication
+
+## 🙏 Acknowledgments
+
+- Spotify Web API for music integration
+- Apple MusicKit for Apple Music support
+- YouTube Data API for YouTube Music
+- Tailwind CSS for styling
+- Font Awesome for icons
+- Chart.js for data visualization
 
 ---
 
-## 🏆 **Project Status**
-
-✅ **Production Ready**: Fully tested and deployed  
-✅ **Multi-Platform**: Supports all major music platforms  
-✅ **Multilingual**: German and English support  
-✅ **Secure**: Enterprise-grade security  
-✅ **Scalable**: Ready for high-traffic deployment  
-✅ **Maintained**: Active development and support  
-
-**Built with ❤️ by the Playlist Manager Team**
-
----
-
-*For the latest updates and features, visit [https://playlist-manager.de](https://playlist-manager.de)* 
+**Made with ❤️ for music lovers everywhere** 

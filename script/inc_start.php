@@ -111,7 +111,7 @@ $password = "WaBtpcMKcgf49wqp";
 
 if(isset($_SESSION['id'])) {
 if(isset($_SESSION['playing_time'])) {
-$pdo = new PDO('mysql:host=localhost;dbname=d03c87b1', 'd03c87b1', 'WaBtpcMKcgf49wqp');
+$pdo = new PDO('mysql:host=localhost;dbname=d03c87b2', 'd03c87b1', 'WaBtpcMKcgf49wqp');
 
 $sql = "SELECT playing_time FROM users WHERE id=".$_SESSION['id'];
 foreach ($pdo->query($sql) as $row) {

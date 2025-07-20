@@ -1,6 +1,7 @@
 <?php
 require 'script/inc_start.php';
 require 'script/languages.php';
+require 'script/language_utils.php';
 
 // Check if user is logged in
 if(!isset($_SESSION['id'])) {

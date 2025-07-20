@@ -1,5 +1,6 @@
 <?php
 require_once 'script/languages.php';
+require_once 'script/language_utils.php';
 ?>
 <footer class="footer bg-gray-900 text-white">
     <div class="container mx-auto px-4 py-12">
@@ -117,11 +118,11 @@ require_once 'script/languages.php';
                     <!-- Language Switcher -->
                     <div class="flex items-center space-x-2">
                         <span class="text-gray-400 text-sm"><?php echo $lang->get('language'); ?>:</span>
-                        <a href="?lang=en" class="language-link <?php echo $lang->getCurrentLanguage() === 'en' ? 'active' : ''; ?>">
+                        <a href="<?php echo buildLanguageUrl('en'); ?>" class="language-link <?php echo $lang->getCurrentLanguage() === 'en' ? 'active' : ''; ?>">
                             EN
                         </a>
                         <span class="text-gray-600">|</span>
-                        <a href="?lang=de" class="language-link <?php echo $lang->getCurrentLanguage() === 'de' ? 'active' : ''; ?>">
+                        <a href="<?php echo buildLanguageUrl('de'); ?>" class="language-link <?php echo $lang->getCurrentLanguage() === 'de' ? 'active' : ''; ?>">
                             DE
                         </a>
                     </div>

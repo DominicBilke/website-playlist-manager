@@ -1,5 +1,11 @@
 <?php
-require_once 'script/languages.php';
+// Ensure language manager is loaded
+if (!isset($lang)) {
+    require_once 'script/languages.php';
+}
+
+// Include language utilities
+require_once 'script/language_utils.php';
 ?>
 <header class="header bg-white shadow-sm border-b border-gray-200">
     <div class="container mx-auto px-4">
@@ -38,17 +44,17 @@ require_once 'script/languages.php';
             <div class="flex items-center space-x-4">
                 <!-- Language Switcher -->
                 <div class="language-switcher relative">
-                    <button class="language-toggle flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
+                    <button id="language-toggle" class="language-toggle flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
                         <i class="fas fa-globe"></i>
                         <span><?php echo $lang->getCurrentLanguage() === 'de' ? 'DE' : 'EN'; ?></span>
                         <i class="fas fa-chevron-down text-xs"></i>
                     </button>
                     
-                    <div class="language-dropdown absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible transition-all duration-200 z-50">
-                        <a href="?lang=en" class="language-option block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors">
+                    <div id="language-dropdown" class="language-dropdown absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible transition-all duration-200 z-50">
+                        <a href="<?php echo buildLanguageUrl('en'); ?>" class="language-option block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors <?php echo $lang->getCurrentLanguage() === 'en' ? 'bg-purple-50 text-purple-600' : ''; ?>">
                             <i class="fas fa-flag mr-2"></i>English
                         </a>
-                        <a href="?lang=de" class="language-option block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors">
+                        <a href="<?php echo buildLanguageUrl('de'); ?>" class="language-option block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors <?php echo $lang->getCurrentLanguage() === 'de' ? 'bg-purple-50 text-purple-600' : ''; ?>">
                             <i class="fas fa-flag mr-2"></i>Deutsch
                         </a>
                     </div>
@@ -57,7 +63,7 @@ require_once 'script/languages.php';
                 <!-- User Menu -->
                 <?php if (isset($_SESSION['id'])): ?>
                     <div class="user-menu relative">
-                        <button class="user-toggle flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
+                        <button id="user-toggle" class="user-toggle flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
                             <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
                                 <i class="fas fa-user text-white text-sm"></i>
                             </div>
@@ -65,7 +71,7 @@ require_once 'script/languages.php';
                             <i class="fas fa-chevron-down text-xs"></i>
                         </button>
                         
-                        <div class="user-dropdown absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible transition-all duration-200 z-50">
+                        <div id="user-dropdown" class="user-dropdown absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible transition-all duration-200 z-50">
                             <div class="px-4 py-3 border-b border-gray-100">
                                 <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($_SESSION['login']); ?></p>
                                 <p class="text-xs text-gray-500">Team <?php echo htmlspecialchars($_SESSION['team'] ?? 'N/A'); ?></p>
@@ -98,7 +104,7 @@ require_once 'script/languages.php';
                 <?php endif; ?>
 
                 <!-- Mobile Menu Toggle -->
-                <button class="mobile-menu-toggle md:hidden p-2 text-gray-500 hover:text-gray-700 transition-colors">
+                <button id="mobile-menu-toggle" class="mobile-menu-toggle md:hidden p-2 text-gray-500 hover:text-gray-700 transition-colors">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
@@ -106,7 +112,7 @@ require_once 'script/languages.php';
     </div>
 
     <!-- Mobile Navigation Menu -->
-    <div class="mobile-menu md:hidden bg-white border-t border-gray-200 opacity-0 invisible transition-all duration-200">
+    <div id="mobile-menu" class="mobile-menu md:hidden bg-white border-t border-gray-200 opacity-0 invisible transition-all duration-200">
         <div class="px-4 py-2 space-y-1">
             <a href="index.php" class="mobile-nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'index.php' ? 'active' : ''; ?>">
                 <i class="fas fa-home mr-3"></i><?php echo $lang->get('home'); ?>
@@ -129,6 +135,8 @@ require_once 'script/languages.php';
         </div>
     </div>
 </header>
+
+
 
 <style>
 /* Header-specific styles */
@@ -251,11 +259,11 @@ require_once 'script/languages.php';
 </style>
 
 <script>
-// Header functionality
+// Header JavaScript functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Language switcher
-    const languageToggle = document.querySelector('.language-toggle');
-    const languageDropdown = document.querySelector('.language-dropdown');
+    const languageToggle = document.getElementById('language-toggle');
+    const languageDropdown = document.getElementById('language-dropdown');
     
     if (languageToggle && languageDropdown) {
         languageToggle.addEventListener('click', function(e) {
@@ -263,10 +271,10 @@ document.addEventListener('DOMContentLoaded', function() {
             languageDropdown.classList.toggle('show');
         });
     }
-
+    
     // User menu
-    const userToggle = document.querySelector('.user-toggle');
-    const userDropdown = document.querySelector('.user-dropdown');
+    const userToggle = document.getElementById('user-toggle');
+    const userDropdown = document.getElementById('user-dropdown');
     
     if (userToggle && userDropdown) {
         userToggle.addEventListener('click', function(e) {
@@ -274,53 +282,33 @@ document.addEventListener('DOMContentLoaded', function() {
             userDropdown.classList.toggle('show');
         });
     }
-
+    
     // Mobile menu
-    const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
-    const mobileMenu = document.querySelector('.mobile-menu');
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
     
     if (mobileMenuToggle && mobileMenu) {
-        mobileMenuToggle.addEventListener('click', function() {
+        mobileMenuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
             mobileMenu.classList.toggle('show');
-            
-            // Toggle icon
-            const icon = this.querySelector('i');
-            if (mobileMenu.classList.contains('show')) {
-                icon.classList.remove('fa-bars');
-                icon.classList.add('fa-times');
-            } else {
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
         });
     }
-
+    
     // Close dropdowns when clicking outside
-    document.addEventListener('click', function() {
-        if (languageDropdown) languageDropdown.classList.remove('show');
-        if (userDropdown) userDropdown.classList.remove('show');
+    document.addEventListener('click', function(e) {
+        if (languageDropdown && !languageToggle.contains(e.target) && !languageDropdown.contains(e.target)) {
+            languageDropdown.classList.remove('show');
+        }
+        
+        if (userDropdown && !userToggle.contains(e.target) && !userDropdown.contains(e.target)) {
+            userDropdown.classList.remove('show');
+        }
     });
-
-    // Close mobile menu when clicking on a link
-    const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
-    mobileNavLinks.forEach(link => {
-        link.addEventListener('click', function() {
-            if (mobileMenu) mobileMenu.classList.remove('show');
-            const icon = mobileMenuToggle.querySelector('i');
-            icon.classList.remove('fa-times');
-            icon.classList.add('fa-bars');
-        });
-    });
-
-    // Handle window resize
-    window.addEventListener('resize', function() {
-        if (window.innerWidth >= 768) {
-            if (mobileMenu) mobileMenu.classList.remove('show');
-            const icon = mobileMenuToggle?.querySelector('i');
-            if (icon) {
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
+    
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(e) {
+        if (mobileMenu && !mobileMenuToggle.contains(e.target) && !mobileMenu.contains(e.target)) {
+            mobileMenu.classList.remove('show');
         }
     });
 });
