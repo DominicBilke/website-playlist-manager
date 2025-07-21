@@ -238,23 +238,139 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
 
         <!-- Connection Status -->
         <?php if (!$status['connected']): ?>
-            <div class="card mb-6 animate-fade-in">
-                <div class="card-body text-center">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fab fa-spotify text-gray-400 text-2xl"></i>
+            <!-- Not Connected State -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Connection Card -->
+                <div class="lg:col-span-2">
+                    <div class="card mb-6 animate-fade-in">
+                        <div class="card-body text-center">
+                            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fab fa-spotify text-gray-400 text-3xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-semibold text-gray-900 mb-4">
+                                <?php echo $lang->get('connect_spotify'); ?>
+                            </h3>
+                            <p class="text-gray-600 mb-6 text-lg">
+                                <?php echo $lang->getCurrentLanguage() === 'de' 
+                                    ? 'Verbinden Sie Ihr Spotify-Konto, um auf Ihre Playlists zuzugreifen und Musik abzuspielen.'
+                                    : 'Connect your Spotify account to access your playlists and play music.'; ?>
+                            </p>
+                            <div class="space-y-4">
+                                <a href="https://accounts.spotify.com/authorize?client_id=4078ed7dc1264188a9e83dfd459a94a0&response_type=code&redirect_uri=<?php echo urlencode('https://playlist-manager.de/spotify_play.php'); ?>&scope=user-read-private%20user-read-email%20playlist-read-private%20playlist-modify-public%20playlist-modify-private%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20streaming" 
+                                   class="btn btn-primary btn-lg">
+                                    <i class="fab fa-spotify mr-3"></i><?php echo $lang->get('connect_spotify'); ?>
+                                </a>
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-shield-alt mr-2"></i>
+                                    <?php echo $lang->getCurrentLanguage() === 'de' 
+                                        ? 'Sichere Verbindung über Spotify OAuth'
+                                        : 'Secure connection via Spotify OAuth'; ?>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                        <?php echo $lang->get('connect_spotify'); ?>
-                    </h3>
-                    <p class="text-gray-600 mb-4">
-                        <?php echo $lang->getCurrentLanguage() === 'de' 
-                            ? 'Verbinden Sie Ihr Spotify-Konto, um auf Ihre Playlists zuzugreifen und Musik abzuspielen.'
-                            : 'Connect your Spotify account to access your playlists and play music.'; ?>
-                    </p>
-                    <a href="https://accounts.spotify.com/authorize?client_id=4078ed7dc1264188a9e83dfd459a94a0&response_type=code&redirect_uri=<?php echo urlencode('https://playlist-manager.de/spotify_play.php'); ?>&scope=user-read-private%20user-read-email%20playlist-read-private%20playlist-modify-public%20playlist-modify-private%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20streaming" 
-                       class="btn btn-primary">
-                        <i class="fab fa-spotify mr-2"></i><?php echo $lang->get('connect_spotify'); ?>
-                    </a>
+
+                    <!-- Features Preview -->
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-star mr-2 text-yellow-500"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verfügbare Features' : 'Available Features'; ?>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-play text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Fernsteuerung' : 'Remote Control'; ?></h3>
+                                        <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Steuern Sie Ihre Spotify-Wiedergabe von überall' : 'Control your Spotify playback from anywhere'; ?></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-list text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Playlist-Management' : 'Playlist Management'; ?></h3>
+                                        <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verwalten und erstellen Sie Playlists' : 'Manage and create playlists'; ?></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-chart-line text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Analytics' : 'Analytics'; ?></h3>
+                                        <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verfolgen Sie Ihre Hörgewohnheiten' : 'Track your listening habits'; ?></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-magic text-orange-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'KI-Playlists' : 'AI Playlists'; ?></h3>
+                                        <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Automatisch generierte Playlists' : 'Automatically generated playlists'; ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div>
+                    <!-- Quick Actions -->
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-bolt mr-2"></i><?php echo $lang->get('quick_actions'); ?>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="space-y-3">
+                                <a href="https://open.spotify.com" target="_blank" class="btn btn-secondary w-full">
+                                    <i class="fab fa-spotify mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Spotify öffnen' : 'Open Spotify'; ?>
+                                </a>
+                                <a href="player.php" class="btn btn-outline w-full">
+                                    <i class="fas fa-arrow-left mr-2"></i><?php echo $lang->get('back_to_player'); ?>
+                                </a>
+                                <a href="editaccount.php" class="btn btn-outline w-full">
+                                    <i class="fas fa-cog mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Einstellungen' : 'Settings'; ?>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Help & Support -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-question-circle mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Hilfe & Support' : 'Help & Support'; ?>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="space-y-3">
+                                <div class="text-sm text-gray-600">
+                                    <p class="mb-2"><strong><?php echo $lang->getCurrentLanguage() === 'de' ? 'Benötigte Berechtigungen:' : 'Required permissions:'; ?></strong></p>
+                                    <ul class="list-disc list-inside space-y-1 text-xs">
+                                        <li><?php echo $lang->getCurrentLanguage() === 'de' ? 'Playlists lesen & bearbeiten' : 'Read & modify playlists'; ?></li>
+                                        <li><?php echo $lang->getCurrentLanguage() === 'de' ? 'Wiedergabe steuern' : 'Control playback'; ?></li>
+                                        <li><?php echo $lang->getCurrentLanguage() === 'de' ? 'Benutzerdaten lesen' : 'Read user data'; ?></li>
+                                    </ul>
+                                </div>
+                                <div class="pt-3 border-t border-gray-200">
+                                    <p class="text-xs text-gray-500">
+                                        <?php echo $lang->getCurrentLanguage() === 'de' 
+                                            ? 'Haben Sie Probleme? Kontaktieren Sie den Support.'
+                                            : 'Having issues? Contact support.'; ?>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         <?php else: ?>

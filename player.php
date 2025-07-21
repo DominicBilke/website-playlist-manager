@@ -366,6 +366,122 @@ $success = $_GET['success'] ?? '';
             </div>
         </div>
 
+        <?php
+        // Check if any platforms are connected
+        $anyConnected = false;
+        foreach ($platformStatuses as $platform => $status) {
+            if ($status['connected']) {
+                $anyConnected = true;
+                break;
+            }
+        }
+        ?>
+
+        <?php if (!$anyConnected): ?>
+        <!-- No Platforms Connected State -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Welcome Card -->
+            <div class="card animate-fade-in">
+                <div class="card-body text-center">
+                    <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-music text-purple-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">
+                        <?php echo $lang->getCurrentLanguage() === 'de' ? 'Willkommen beim Musik-Player' : 'Welcome to Music Player'; ?>
+                    </h3>
+                    <p class="text-gray-600 mb-6 text-lg">
+                        <?php echo $lang->getCurrentLanguage() === 'de' 
+                            ? 'Verbinden Sie Ihre Musikplattformen, um mit dem Abspielen zu beginnen.'
+                            : 'Connect your music platforms to start playing.'; ?>
+                    </p>
+                    <div class="space-y-3">
+                        <a href="spotify_play.php" class="btn btn-primary btn-lg w-full">
+                            <i class="fab fa-spotify mr-3"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Spotify verbinden' : 'Connect Spotify'; ?>
+                        </a>
+                        <p class="text-sm text-gray-500">
+                            <?php echo $lang->getCurrentLanguage() === 'de' 
+                                ? 'Weitere Plattformen werden bald verfügbar sein'
+                                : 'More platforms coming soon'; ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Overview -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-star mr-2 text-yellow-500"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verfügbare Features' : 'Available Features'; ?>
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-play text-green-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Einheitliche Steuerung' : 'Unified Control'; ?></h3>
+                                <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Steuern Sie alle Ihre Musikplattformen von einem Ort aus' : 'Control all your music platforms from one place'; ?></p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-list text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Playlist-Management' : 'Playlist Management'; ?></h3>
+                                <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verwalten Sie Ihre Playlists über alle Plattformen hinweg' : 'Manage your playlists across all platforms'; ?></p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-chart-line text-purple-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Analytics' : 'Analytics'; ?></h3>
+                                <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verfolgen Sie Ihre Hörgewohnheiten und Statistiken' : 'Track your listening habits and statistics'; ?></p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-magic text-orange-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'KI-Playlists' : 'AI Playlists'; ?></h3>
+                                <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Automatisch generierte Playlists basierend auf Ihren Vorlieben' : 'Automatically generated playlists based on your preferences'; ?></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-bolt mr-2"></i><?php echo $lang->get('quick_actions'); ?>
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <a href="spotify_play.php" class="btn btn-secondary w-full">
+                            <i class="fab fa-spotify mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Spotify einrichten' : 'Setup Spotify'; ?>
+                        </a>
+                        <a href="editaccount.php" class="btn btn-outline w-full">
+                            <i class="fas fa-cog mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Einstellungen' : 'Settings'; ?>
+                        </a>
+                        <a href="https://open.spotify.com" target="_blank" class="btn btn-outline w-full">
+                            <i class="fas fa-external-link-alt mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Spotify öffnen' : 'Open Spotify'; ?>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <?php else: ?>
         <!-- Main Player Section -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Player Controls -->
@@ -516,6 +632,7 @@ $success = $_GET['success'] ?? '';
                 </div>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 
     <?php include 'components/footer.php'; ?>
