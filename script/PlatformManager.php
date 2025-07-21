@@ -185,6 +185,23 @@ abstract class BasePlatform {
     abstract public function getPlaybackStatus();
     abstract public function authenticate($code = null);
     
+    // Additional playback control methods
+    public function nextTrack() {
+        return ['success' => false, 'message' => 'Not implemented for this platform'];
+    }
+    
+    public function previousTrack() {
+        return ['success' => false, 'message' => 'Not implemented for this platform'];
+    }
+    
+    public function setVolume($volume) {
+        return ['success' => false, 'message' => 'Not implemented for this platform'];
+    }
+    
+    public function seek($position) {
+        return ['success' => false, 'message' => 'Not implemented for this platform'];
+    }
+    
     /**
      * Save tokens to database
      */
@@ -341,13 +358,22 @@ class SpotifyPlatform extends BasePlatform {
                 return ['success' => true, 'playing' => false];
             }
             
+            $track = $playback->item ?? null;
+            $artwork = null;
+            
+            if ($track && isset($track->album->images) && !empty($track->album->images)) {
+                $artwork = $track->album->images[0]->url ?? null;
+            }
+            
             return [
                 'success' => true,
                 'playing' => $playback->is_playing,
-                'track' => $playback->item->name ?? null,
-                'artist' => $playback->item->artists[0]->name ?? null,
+                'track' => $track->name ?? null,
+                'artist' => $track->artists[0]->name ?? null,
+                'album' => $track->album->name ?? null,
+                'artwork' => $artwork,
                 'progress' => $playback->progress_ms ?? 0,
-                'duration' => $playback->item->duration_ms ?? 0
+                'duration' => $track->duration_ms ?? 0
             ];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
@@ -375,6 +401,58 @@ class SpotifyPlatform extends BasePlatform {
             }
             
             return ['success' => false, 'message' => 'Authentication failed'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+    
+    public function nextTrack() {
+        if (!$this->connected) {
+            return ['success' => false, 'message' => 'Not connected'];
+        }
+        
+        try {
+            $this->api->next();
+            return ['success' => true, 'message' => 'Skipped to next track'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+    
+    public function previousTrack() {
+        if (!$this->connected) {
+            return ['success' => false, 'message' => 'Not connected'];
+        }
+        
+        try {
+            $this->api->previous();
+            return ['success' => true, 'message' => 'Went to previous track'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+    
+    public function setVolume($volume) {
+        if (!$this->connected) {
+            return ['success' => false, 'message' => 'Not connected'];
+        }
+        
+        try {
+            $this->api->setVolume($volume);
+            return ['success' => true, 'message' => 'Volume set'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+    
+    public function seek($position) {
+        if (!$this->connected) {
+            return ['success' => false, 'message' => 'Not connected'];
+        }
+        
+        try {
+            $this->api->seek($position);
+            return ['success' => true, 'message' => 'Seeked to position'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }

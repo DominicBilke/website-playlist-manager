@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
     $action = $_POST['action'];
     $playlist_id = $_POST['playlist_id'] ?? null;
+    $track_uri = $_POST['track_uri'] ?? null;
     
     switch ($action) {
         case 'start_playback':
@@ -47,6 +48,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             break;
         case 'get_playlists':
             $result = $spotifyPlatform->getPlaylists();
+            break;
+        case 'next_track':
+            $result = $spotifyPlatform->nextTrack();
+            break;
+        case 'previous_track':
+            $result = $spotifyPlatform->previousTrack();
+            break;
+        case 'set_volume':
+            $volume = $_POST['volume'] ?? 50;
+            $result = $spotifyPlatform->setVolume($volume);
+            break;
+        case 'seek':
+            $position = $_POST['position'] ?? 0;
+            $result = $spotifyPlatform->seek($position);
             break;
         default:
             $result = ['success' => false, 'message' => 'Invalid action'];
@@ -87,6 +102,93 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <style>
+        .player-progress {
+            background: linear-gradient(90deg, #1db954 0%, #1ed760 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: #e5e7eb;
+            outline: none;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #1db954;
+            cursor: pointer;
+        }
+        
+        .volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #1db954;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .playlist-item {
+            transition: all 0.2s ease;
+        }
+        
+        .playlist-item:hover {
+            background-color: #f3f4f6;
+            transform: translateX(4px);
+        }
+        
+        .playlist-item.active {
+            background-color: #dcfce7;
+            border-left: 4px solid #1db954;
+        }
+        
+        .track-artwork {
+            transition: transform 0.2s ease;
+        }
+        
+        .track-artwork:hover {
+            transform: scale(1.05);
+        }
+        
+        .control-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .status-indicator {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <?php include 'components/header.php'; ?>
@@ -121,14 +223,14 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
 
         <!-- Alerts -->
         <?php if ($success_message): ?>
-            <div class="alert alert-success mb-6">
+            <div class="alert alert-success mb-6 animate-fade-in">
                 <i class="fas fa-check-circle"></i>
                 <span><?php echo htmlspecialchars($success_message); ?></span>
             </div>
         <?php endif; ?>
 
         <?php if ($error_message): ?>
-            <div class="alert alert-error mb-6">
+            <div class="alert alert-error mb-6 animate-fade-in">
                 <i class="fas fa-exclamation-circle"></i>
                 <span><?php echo htmlspecialchars($error_message); ?></span>
             </div>
@@ -136,7 +238,7 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
 
         <!-- Connection Status -->
         <?php if (!$status['connected']): ?>
-            <div class="card mb-6">
+            <div class="card mb-6 animate-fade-in">
                 <div class="card-body text-center">
                     <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <i class="fab fa-spotify text-gray-400 text-2xl"></i>
@@ -149,7 +251,7 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
                             ? 'Verbinden Sie Ihr Spotify-Konto, um auf Ihre Playlists zuzugreifen und Musik abzuspielen.'
                             : 'Connect your Spotify account to access your playlists and play music.'; ?>
                     </p>
-                    <a href="https://accounts.spotify.com/authorize?client_id=4078ed7dc1264188a9e83dfd459a94a0&response_type=code&redirect_uri=<?php echo urlencode('https://playlist-manager.de/spotify_play.php'); ?>&scope=user-read-private%20user-read-email%20playlist-read-private%20playlist-modify-public%20playlist-modify-private%20user-read-playback-state%20user-modify-playback-state" 
+                    <a href="https://accounts.spotify.com/authorize?client_id=4078ed7dc1264188a9e83dfd459a94a0&response_type=code&redirect_uri=<?php echo urlencode('https://playlist-manager.de/spotify_play.php'); ?>&scope=user-read-private%20user-read-email%20playlist-read-private%20playlist-modify-public%20playlist-modify-private%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20streaming" 
                        class="btn btn-primary">
                         <i class="fab fa-spotify mr-2"></i><?php echo $lang->get('connect_spotify'); ?>
                     </a>
@@ -157,7 +259,7 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
             </div>
         <?php else: ?>
             <!-- Connected User Info -->
-            <div class="card mb-6">
+            <div class="card mb-6 animate-fade-in">
                 <div class="card-body">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
@@ -175,7 +277,7 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <div class="w-3 h-3 bg-green-500 rounded-full status-indicator"></div>
                             <span class="text-sm text-green-600 font-medium">Connected</span>
                         </div>
                     </div>
@@ -198,6 +300,40 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
                             </p>
                         </div>
                         <div class="card-body">
+                            <!-- Current Track Display -->
+                            <div id="current-track" class="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200" style="display: none;">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                                        <img id="track-artwork" src="" alt="Track Artwork" class="w-full h-full object-cover track-artwork">
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 id="track-title" class="font-semibold text-gray-900 text-lg">Track Title</h3>
+                                        <p id="track-artist" class="text-gray-600">Artist Name</p>
+                                        <p id="track-album" class="text-sm text-gray-500">Album Name</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div id="track-duration" class="text-sm text-gray-500">0:00 / 0:00</div>
+                                        <div class="text-xs text-gray-400 mt-1">
+                                            <span id="playback-status">Paused</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                <div class="mt-4">
+                                    <div class="flex items-center space-x-3">
+                                        <span id="current-time" class="text-xs text-gray-500 w-8">0:00</span>
+                                        <div class="flex-1 relative">
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div id="progress-bar" class="player-progress h-2 rounded-full" style="width: 0%"></div>
+                                            </div>
+                                            <input type="range" id="progress-slider" class="absolute inset-0 w-full h-2 opacity-0 cursor-pointer" min="0" max="100" value="0">
+                                        </div>
+                                        <span id="total-time" class="text-xs text-gray-500 w-8">0:00</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Playlist Selection -->
                             <div class="mb-6">
                                 <label class="form-label"><?php echo $lang->get('select_playlist'); ?></label>
@@ -213,24 +349,26 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
                             </div>
 
                             <!-- Player Controls -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                <button id="play-btn" class="btn btn-primary" onclick="startPlayback()">
-                                    <i class="fas fa-play mr-2"></i><?php echo $lang->get('play'); ?>
+                            <div class="flex items-center justify-center space-x-4 mb-6">
+                                <button id="prev-btn" class="control-btn w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600" onclick="previousTrack()">
+                                    <i class="fas fa-step-backward"></i>
                                 </button>
-                                <button id="pause-btn" class="btn btn-secondary" onclick="stopPlayback()">
-                                    <i class="fas fa-pause mr-2"></i><?php echo $lang->get('pause'); ?>
+                                
+                                <button id="play-btn" class="control-btn w-16 h-16 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center text-white shadow-lg" onclick="togglePlayback()">
+                                    <i class="fas fa-play text-xl"></i>
                                 </button>
-                                <button id="next-btn" class="btn btn-secondary" onclick="nextTrack()">
-                                    <i class="fas fa-forward mr-2"></i><?php echo $lang->get('next'); ?>
+                                
+                                <button id="next-btn" class="control-btn w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600" onclick="nextTrack()">
+                                    <i class="fas fa-step-forward"></i>
                                 </button>
                             </div>
 
-                            <!-- Current Track Info -->
-                            <div id="track-info" class="bg-gray-50 rounded-lg p-4" style="display: none;">
-                                <h3 class="font-semibold text-gray-900 mb-2"><?php echo $lang->get('now_playing'); ?></h3>
-                                <div id="track-details" class="text-gray-600">
-                                    <!-- Track details will be loaded here -->
-                                </div>
+                            <!-- Volume Control -->
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-volume-down text-gray-500 w-4"></i>
+                                <input type="range" id="volume-slider" class="volume-slider flex-1" min="0" max="100" value="50">
+                                <i class="fas fa-volume-up text-gray-500 w-4"></i>
+                                <span id="volume-value" class="text-sm text-gray-500 w-8">50%</span>
                             </div>
                         </div>
                     </div>
@@ -363,15 +501,73 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
     
     <script>
     let playbackStatus = null;
+    let isPlaying = false;
+    let currentPlaylist = '';
+    let updateInterval = null;
+    
+    // Initialize player
+    document.addEventListener('DOMContentLoaded', function() {
+        initializePlayer();
+        setupEventListeners();
+    });
+    
+    function initializePlayer() {
+        // Load initial status
+        updatePlaybackStatus();
+        
+        // Start periodic updates
+        updateInterval = setInterval(updatePlaybackStatus, 2000);
+    }
+    
+    function setupEventListeners() {
+        // Volume slider
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeValue = document.getElementById('volume-value');
+        
+        volumeSlider.addEventListener('input', function() {
+            const volume = this.value;
+            volumeValue.textContent = volume + '%';
+            setVolume(volume);
+        });
+        
+        // Progress slider
+        const progressSlider = document.getElementById('progress-slider');
+        progressSlider.addEventListener('input', function() {
+            const progress = this.value;
+            document.getElementById('progress-bar').style.width = progress + '%';
+        });
+        
+        progressSlider.addEventListener('change', function() {
+            const position = (this.value / 100) * (playbackStatus?.duration || 0);
+            seek(position);
+        });
+    }
+    
+    // Toggle playback (play/pause)
+    function togglePlayback() {
+        if (!currentPlaylist && !playbackStatus?.playing) {
+            // If no playlist selected and not playing, show playlist selection
+            alert('<?php echo $lang->get("please_select_playlist"); ?>');
+            return;
+        }
+        
+        if (isPlaying) {
+            stopPlayback();
+        } else {
+            startPlayback();
+        }
+    }
     
     // Start playback
     function startPlayback() {
         const playlistId = document.getElementById('playlist-select').value;
         
-        if (!playlistId) {
+        if (!playlistId && !playbackStatus?.playing) {
             alert('<?php echo $lang->get("please_select_playlist"); ?>');
             return;
         }
+        
+        showLoading();
         
         fetch('spotify_play.php', {
             method: 'POST',
@@ -382,20 +578,26 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
         })
         .then(response => response.json())
         .then(data => {
+            hideLoading();
             if (data.success) {
+                isPlaying = true;
                 updatePlaybackStatus();
+                updatePlayButton();
             } else {
-                alert(data.message || '<?php echo $lang->get("playback_error"); ?>');
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
             }
         })
         .catch(error => {
+            hideLoading();
             console.error('Error starting playback:', error);
-            alert('<?php echo $lang->get("playback_error"); ?>');
+            showError('<?php echo $lang->get("playback_error"); ?>');
         });
     }
     
     // Stop playback
     function stopPlayback() {
+        showLoading();
+        
         fetch('spotify_play.php', {
             method: 'POST',
             headers: {
@@ -405,15 +607,105 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
         })
         .then(response => response.json())
         .then(data => {
+            hideLoading();
             if (data.success) {
+                isPlaying = false;
                 updatePlaybackStatus();
+                updatePlayButton();
             } else {
-                alert(data.message || '<?php echo $lang->get("playback_error"); ?>');
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
             }
         })
         .catch(error => {
+            hideLoading();
             console.error('Error stopping playback:', error);
-            alert('<?php echo $lang->get("playback_error"); ?>');
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Next track
+    function nextTrack() {
+        fetch('spotify_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=next_track'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updatePlaybackStatus();
+            } else {
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
+            }
+        })
+        .catch(error => {
+            console.error('Error skipping track:', error);
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Previous track
+    function previousTrack() {
+        fetch('spotify_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=previous_track'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updatePlaybackStatus();
+            } else {
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
+            }
+        })
+        .catch(error => {
+            console.error('Error going to previous track:', error);
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Set volume
+    function setVolume(volume) {
+        fetch('spotify_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=set_volume&volume=${volume}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.warn('Volume setting failed:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error setting volume:', error);
+        });
+    }
+    
+    // Seek to position
+    function seek(position) {
+        fetch('spotify_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=seek&position=${position}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.warn('Seek failed:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error seeking:', error);
         });
     }
     
@@ -430,6 +722,7 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
         .then(data => {
             playbackStatus = data;
             updateTrackInfo();
+            updatePlayButton();
         })
         .catch(error => {
             console.error('Error updating status:', error);
@@ -438,23 +731,109 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
     
     // Update track information display
     function updateTrackInfo() {
-        const trackInfo = document.getElementById('track-info');
-        const trackDetails = document.getElementById('track-details');
+        const currentTrack = document.getElementById('current-track');
+        const trackTitle = document.getElementById('track-title');
+        const trackArtist = document.getElementById('track-artist');
+        const trackAlbum = document.getElementById('track-album');
+        const trackArtwork = document.getElementById('track-artwork');
+        const trackDuration = document.getElementById('track-duration');
+        const playbackStatusText = document.getElementById('playback-status');
+        const progressBar = document.getElementById('progress-bar');
+        const progressSlider = document.getElementById('progress-slider');
+        const currentTime = document.getElementById('current-time');
+        const totalTime = document.getElementById('total-time');
         
         if (playbackStatus && playbackStatus.success && playbackStatus.playing) {
-            trackInfo.style.display = 'block';
-            trackDetails.innerHTML = `
-                <p><strong>${playbackStatus.track || 'Unknown Track'}</strong></p>
-                <p>${playbackStatus.artist || 'Unknown Artist'}</p>
-                <div class="mt-2">
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-green-600 h-2 rounded-full" style="width: ${(playbackStatus.progress / playbackStatus.duration) * 100}%"></div>
-                    </div>
-                </div>
-            `;
+            currentTrack.style.display = 'block';
+            
+            // Update track info
+            trackTitle.textContent = playbackStatus.track || 'Unknown Track';
+            trackArtist.textContent = playbackStatus.artist || 'Unknown Artist';
+            trackAlbum.textContent = playbackStatus.album || 'Unknown Album';
+            
+            // Update artwork
+            if (playbackStatus.artwork) {
+                trackArtwork.src = playbackStatus.artwork;
+                trackArtwork.style.display = 'block';
+            } else {
+                trackArtwork.style.display = 'none';
+            }
+            
+            // Update progress
+            const progress = playbackStatus.progress || 0;
+            const duration = playbackStatus.duration || 0;
+            const progressPercent = duration > 0 ? (progress / duration) * 100 : 0;
+            
+            progressBar.style.width = progressPercent + '%';
+            progressSlider.value = progressPercent;
+            
+            // Update time displays
+            currentTime.textContent = formatTime(progress);
+            totalTime.textContent = formatTime(duration);
+            trackDuration.textContent = `${formatTime(progress)} / ${formatTime(duration)}`;
+            
+            // Update status
+            playbackStatusText.textContent = 'Playing';
+            isPlaying = true;
         } else {
-            trackInfo.style.display = 'none';
+            currentTrack.style.display = 'none';
+            isPlaying = false;
         }
+    }
+    
+    // Update play button
+    function updatePlayButton() {
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = playBtn.querySelector('i');
+        
+        if (isPlaying) {
+            playIcon.className = 'fas fa-pause text-xl';
+        } else {
+            playIcon.className = 'fas fa-play text-xl';
+        }
+    }
+    
+    // Format time in MM:SS
+    function formatTime(ms) {
+        if (!ms) return '0:00';
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Show loading state
+    function showLoading() {
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = playBtn.querySelector('i');
+        playIcon.className = 'fas fa-spinner loading-spinner text-xl';
+        playBtn.disabled = true;
+    }
+    
+    // Hide loading state
+    function hideLoading() {
+        const playBtn = document.getElementById('play-btn');
+        playBtn.disabled = false;
+        updatePlayButton();
+    }
+    
+    // Show error message
+    function showError(message) {
+        // Create temporary error alert
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-error mb-6 animate-fade-in';
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i>
+            <span>${message}</span>
+        `;
+        
+        const container = document.querySelector('.container');
+        container.insertBefore(alert, container.firstChild);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
     }
     
     // Create playlist
@@ -465,11 +844,6 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
     // Import playlist
     function importPlaylist() {
         alert('<?php echo $lang->get("import_playlist_feature"); ?>');
-    }
-    
-    // Next track
-    function nextTrack() {
-        alert('<?php echo $lang->get("next_track_feature"); ?>');
     }
     
     // Open Spotify
@@ -492,8 +866,12 @@ $success_message = $success_message ?? $_GET['success'] ?? '';
         alert('<?php echo $lang->get("settings_saved"); ?>');
     }
     
-    // Update status periodically
-    setInterval(updatePlaybackStatus, 5000);
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (updateInterval) {
+            clearInterval(updateInterval);
+        }
+    });
     </script>
 </body>
 </html>

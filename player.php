@@ -24,6 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
     $platform = $_POST['platform'] ?? '';
     $playlist_id = $_POST['playlist_id'] ?? null;
+    $track_uri = $_POST['track_uri'] ?? null;
+    $volume = $_POST['volume'] ?? 50;
+    $position = $_POST['position'] ?? 0;
     
     switch ($action) {
         case 'start_playback':
@@ -38,6 +41,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         case 'get_playlists':
             $platformInstance = $platformManager->getPlatform($platform);
             $result = $platformInstance ? $platformInstance->getPlaylists() : [];
+            break;
+        case 'next_track':
+            $platformInstance = $platformManager->getPlatform($platform);
+            $result = $platformInstance ? $platformInstance->nextTrack() : ['success' => false, 'message' => 'Platform not available'];
+            break;
+        case 'previous_track':
+            $platformInstance = $platformManager->getPlatform($platform);
+            $result = $platformInstance ? $platformInstance->previousTrack() : ['success' => false, 'message' => 'Platform not available'];
+            break;
+        case 'set_volume':
+            $platformInstance = $platformManager->getPlatform($platform);
+            $result = $platformInstance ? $platformInstance->setVolume($volume) : ['success' => false, 'message' => 'Platform not available'];
+            break;
+        case 'seek':
+            $platformInstance = $platformManager->getPlatform($platform);
+            $result = $platformInstance ? $platformInstance->seek($position) : ['success' => false, 'message' => 'Platform not available'];
             break;
         default:
             $result = ['success' => false, 'message' => 'Invalid action'];
@@ -78,6 +97,109 @@ $success = $_GET['success'] ?? '';
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <style>
+        .platform-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .platform-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .platform-card.connected {
+            border-color: #10b981;
+        }
+        
+        .platform-card.disconnected {
+            border-color: #e5e7eb;
+        }
+        
+        .platform-card.manual {
+            border-color: #f59e0b;
+        }
+        
+        .player-progress {
+            background: linear-gradient(90deg, #8b5cf6 0%, #a855f7 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: #e5e7eb;
+            outline: none;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            cursor: pointer;
+        }
+        
+        .volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .control-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .status-indicator {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .track-artwork {
+            transition: transform 0.2s ease;
+        }
+        
+        .track-artwork:hover {
+            transform: scale(1.05);
+        }
+        
+        .platform-icon {
+            transition: all 0.3s ease;
+        }
+        
+        .platform-card:hover .platform-icon {
+            transform: scale(1.1);
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <?php include 'components/header.php'; ?>
@@ -112,14 +234,14 @@ $success = $_GET['success'] ?? '';
 
         <!-- Messages -->
         <?php if ($error): ?>
-            <div class="alert alert-error mb-6">
+            <div class="alert alert-error mb-6 animate-fade-in">
                 <i class="fas fa-exclamation-circle"></i>
                 <span><?php echo htmlspecialchars($error); ?></span>
             </div>
         <?php endif; ?>
 
         <?php if ($success): ?>
-            <div class="alert alert-success mb-6">
+            <div class="alert alert-success mb-6 animate-fade-in">
                 <i class="fas fa-check-circle"></i>
                 <span><?php echo htmlspecialchars($success); ?></span>
             </div>
@@ -128,12 +250,12 @@ $success = $_GET['success'] ?? '';
         <!-- Platform Status Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- Spotify -->
-            <div class="card">
+            <div class="platform-card card <?php echo $platformStatuses['spotify']['connected'] ? 'connected' : 'disconnected'; ?>">
                 <div class="card-body">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center">
                             <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                <i class="fab fa-spotify text-green-600 text-xl"></i>
+                                <i class="fab fa-spotify text-green-600 text-xl platform-icon"></i>
                             </div>
                             <div class="ml-3">
                                 <h3 class="font-semibold text-gray-900">Spotify</h3>
@@ -142,7 +264,7 @@ $success = $_GET['success'] ?? '';
                                 </p>
                             </div>
                         </div>
-                        <div class="w-3 h-3 rounded-full <?php echo $platformStatuses['spotify']['connected'] ? 'bg-green-500' : 'bg-gray-300'; ?>"></div>
+                        <div class="w-3 h-3 rounded-full <?php echo $platformStatuses['spotify']['connected'] ? 'bg-green-500 status-indicator' : 'bg-gray-300'; ?>"></div>
                     </div>
                     <div class="space-y-2">
                         <?php if ($platformStatuses['spotify']['connected']): ?>
@@ -159,12 +281,12 @@ $success = $_GET['success'] ?? '';
             </div>
 
             <!-- Apple Music -->
-            <div class="card">
+            <div class="platform-card card <?php echo $platformStatuses['apple_music']['connected'] ? 'connected' : 'disconnected'; ?>">
                 <div class="card-body">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center">
                             <div class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
-                                <i class="fab fa-apple text-pink-600 text-xl"></i>
+                                <i class="fab fa-apple text-pink-600 text-xl platform-icon"></i>
                             </div>
                             <div class="ml-3">
                                 <h3 class="font-semibold text-gray-900">Apple Music</h3>
@@ -173,7 +295,7 @@ $success = $_GET['success'] ?? '';
                                 </p>
                             </div>
                         </div>
-                        <div class="w-3 h-3 rounded-full <?php echo $platformStatuses['apple_music']['connected'] ? 'bg-green-500' : 'bg-gray-300'; ?>"></div>
+                        <div class="w-3 h-3 rounded-full <?php echo $platformStatuses['apple_music']['connected'] ? 'bg-green-500 status-indicator' : 'bg-gray-300'; ?>"></div>
                     </div>
                     <div class="space-y-2">
                         <?php if ($platformStatuses['apple_music']['connected']): ?>
@@ -190,12 +312,12 @@ $success = $_GET['success'] ?? '';
             </div>
 
             <!-- YouTube Music -->
-            <div class="card">
+            <div class="platform-card card <?php echo $platformStatuses['youtube']['connected'] ? 'connected' : 'disconnected'; ?>">
                 <div class="card-body">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center">
                             <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                                <i class="fab fa-youtube text-red-600 text-xl"></i>
+                                <i class="fab fa-youtube text-red-600 text-xl platform-icon"></i>
                             </div>
                             <div class="ml-3">
                                 <h3 class="font-semibold text-gray-900">YouTube Music</h3>
@@ -204,7 +326,7 @@ $success = $_GET['success'] ?? '';
                                 </p>
                             </div>
                         </div>
-                        <div class="w-3 h-3 rounded-full <?php echo $platformStatuses['youtube']['connected'] ? 'bg-green-500' : 'bg-gray-300'; ?>"></div>
+                        <div class="w-3 h-3 rounded-full <?php echo $platformStatuses['youtube']['connected'] ? 'bg-green-500 status-indicator' : 'bg-gray-300'; ?>"></div>
                     </div>
                     <div class="space-y-2">
                         <?php if ($platformStatuses['youtube']['connected']): ?>
@@ -221,19 +343,19 @@ $success = $_GET['success'] ?? '';
             </div>
 
             <!-- Amazon Music -->
-            <div class="card">
+            <div class="platform-card card manual">
                 <div class="card-body">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center">
                             <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <i class="fab fa-amazon text-orange-600 text-xl"></i>
+                                <i class="fab fa-amazon text-orange-600 text-xl platform-icon"></i>
                             </div>
                             <div class="ml-3">
                                 <h3 class="font-semibold text-gray-900">Amazon Music</h3>
                                 <p class="text-sm text-gray-500">Manual Control</p>
                             </div>
                         </div>
-                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500 status-indicator"></div>
                     </div>
                     <div class="space-y-2">
                         <button class="btn btn-warning btn-sm w-full" onclick="openPlatform('amazon')">
@@ -255,6 +377,40 @@ $success = $_GET['success'] ?? '';
                         </h2>
                     </div>
                     <div class="card-body">
+                        <!-- Current Track Display -->
+                        <div id="current-track" class="mb-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200" style="display: none;">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                                    <img id="track-artwork" src="" alt="Track Artwork" class="w-full h-full object-cover track-artwork">
+                                </div>
+                                <div class="flex-1">
+                                    <h3 id="track-title" class="font-semibold text-gray-900 text-lg">Track Title</h3>
+                                    <p id="track-artist" class="text-gray-600">Artist Name</p>
+                                    <p id="track-album" class="text-sm text-gray-500">Album Name</p>
+                                </div>
+                                <div class="text-right">
+                                    <div id="track-duration" class="text-sm text-gray-500">0:00 / 0:00</div>
+                                    <div class="text-xs text-gray-400 mt-1">
+                                        <span id="playback-status">Paused</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div class="mt-4">
+                                <div class="flex items-center space-x-3">
+                                    <span id="current-time" class="text-xs text-gray-500 w-8">0:00</span>
+                                    <div class="flex-1 relative">
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div id="progress-bar" class="player-progress h-2 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                        <input type="range" id="progress-slider" class="absolute inset-0 w-full h-2 opacity-0 cursor-pointer" min="0" max="100" value="0">
+                                    </div>
+                                    <span id="total-time" class="text-xs text-gray-500 w-8">0:00</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Platform Selection -->
                         <div class="mb-6">
                             <label class="form-label"><?php echo $lang->get('select_platform'); ?></label>
@@ -276,24 +432,26 @@ $success = $_GET['success'] ?? '';
                         </div>
 
                         <!-- Player Controls -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <button id="play-btn" class="btn btn-primary" onclick="startPlayback()" disabled>
-                                <i class="fas fa-play mr-2"></i><?php echo $lang->get('play'); ?>
+                        <div class="flex items-center justify-center space-x-4 mb-6">
+                            <button id="prev-btn" class="control-btn w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600" onclick="previousTrack()" disabled>
+                                <i class="fas fa-step-backward"></i>
                             </button>
-                            <button id="pause-btn" class="btn btn-secondary" onclick="stopPlayback()" disabled>
-                                <i class="fas fa-pause mr-2"></i><?php echo $lang->get('pause'); ?>
+                            
+                            <button id="play-btn" class="control-btn w-16 h-16 bg-purple-600 hover:bg-purple-700 rounded-full flex items-center justify-center text-white shadow-lg" onclick="togglePlayback()" disabled>
+                                <i class="fas fa-play text-xl"></i>
                             </button>
-                            <button id="next-btn" class="btn btn-secondary" onclick="nextTrack()" disabled>
-                                <i class="fas fa-forward mr-2"></i><?php echo $lang->get('next'); ?>
+                            
+                            <button id="next-btn" class="control-btn w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600" onclick="nextTrack()" disabled>
+                                <i class="fas fa-step-forward"></i>
                             </button>
                         </div>
 
-                        <!-- Current Track Info -->
-                        <div id="track-info" class="bg-gray-50 rounded-lg p-4" style="display: none;">
-                            <h3 class="font-semibold text-gray-900 mb-2"><?php echo $lang->get('now_playing'); ?></h3>
-                            <div id="track-details" class="text-gray-600">
-                                <!-- Track details will be loaded here -->
-                            </div>
+                        <!-- Volume Control -->
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-volume-down text-gray-500 w-4"></i>
+                            <input type="range" id="volume-slider" class="volume-slider flex-1" min="0" max="100" value="50">
+                            <i class="fas fa-volume-up text-gray-500 w-4"></i>
+                            <span id="volume-value" class="text-sm text-gray-500 w-8">50%</span>
                         </div>
                     </div>
                 </div>
@@ -369,6 +527,41 @@ $success = $_GET['success'] ?? '';
     let currentPlatform = '';
     let currentPlaylist = '';
     let playbackStatus = null;
+    let isPlaying = false;
+    let updateInterval = null;
+    
+    // Initialize player
+    document.addEventListener('DOMContentLoaded', function() {
+        setupEventListeners();
+    });
+    
+    function setupEventListeners() {
+        // Volume slider
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeValue = document.getElementById('volume-value');
+        
+        volumeSlider.addEventListener('input', function() {
+            const volume = this.value;
+            volumeValue.textContent = volume + '%';
+            if (currentPlatform) {
+                setVolume(volume);
+            }
+        });
+        
+        // Progress slider
+        const progressSlider = document.getElementById('progress-slider');
+        progressSlider.addEventListener('input', function() {
+            const progress = this.value;
+            document.getElementById('progress-bar').style.width = progress + '%';
+        });
+        
+        progressSlider.addEventListener('change', function() {
+            if (currentPlatform) {
+                const position = (this.value / 100) * (playbackStatus?.duration || 0);
+                seek(position);
+            }
+        });
+    }
     
     // Load playlists when platform is selected
     function loadPlaylists() {
@@ -378,6 +571,7 @@ $success = $_GET['success'] ?? '';
         
         if (!platform) {
             playlistSection.style.display = 'none';
+            disableControls();
             return;
         }
         
@@ -387,6 +581,7 @@ $success = $_GET['success'] ?? '';
             // Amazon Music - show manual control message
             playlistSection.style.display = 'block';
             playlistSelect.innerHTML = '<option value="">Amazon Music requires manual control</option>';
+            enableControls();
             return;
         }
         
@@ -411,12 +606,40 @@ $success = $_GET['success'] ?? '';
                     playlistSelect.appendChild(option);
                 });
             }
+            
+            enableControls();
+            
+            // Start status updates
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+            updateInterval = setInterval(updatePlaybackStatus, 2000);
         })
         .catch(error => {
             console.error('Error loading playlists:', error);
             playlistSection.style.display = 'block';
             playlistSelect.innerHTML = '<option value="">Error loading playlists</option>';
         });
+    }
+    
+    // Toggle playback (play/pause)
+    function togglePlayback() {
+        if (!currentPlatform) {
+            alert('<?php echo $lang->get("please_select_platform"); ?>');
+            return;
+        }
+        
+        if (currentPlatform === 'amazon') {
+            // Open Amazon Music in new window
+            window.open('https://music.amazon.com', '_blank');
+            return;
+        }
+        
+        if (isPlaying) {
+            stopPlayback();
+        } else {
+            startPlayback();
+        }
     }
     
     // Start playback
@@ -435,6 +658,8 @@ $success = $_GET['success'] ?? '';
             return;
         }
         
+        showLoading();
+        
         fetch('player.php', {
             method: 'POST',
             headers: {
@@ -444,22 +669,27 @@ $success = $_GET['success'] ?? '';
         })
         .then(response => response.json())
         .then(data => {
+            hideLoading();
             if (data.success) {
+                isPlaying = true;
                 updatePlaybackStatus();
-                enableControls();
+                updatePlayButton();
             } else {
-                alert(data.message || '<?php echo $lang->get("playback_error"); ?>');
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
             }
         })
         .catch(error => {
+            hideLoading();
             console.error('Error starting playback:', error);
-            alert('<?php echo $lang->get("playback_error"); ?>');
+            showError('<?php echo $lang->get("playback_error"); ?>');
         });
     }
     
     // Stop playback
     function stopPlayback() {
         if (!currentPlatform) return;
+        
+        showLoading();
         
         fetch('player.php', {
             method: 'POST',
@@ -470,15 +700,113 @@ $success = $_GET['success'] ?? '';
         })
         .then(response => response.json())
         .then(data => {
+            hideLoading();
             if (data.success) {
+                isPlaying = false;
                 updatePlaybackStatus();
+                updatePlayButton();
             } else {
-                alert(data.message || '<?php echo $lang->get("playback_error"); ?>');
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
             }
         })
         .catch(error => {
+            hideLoading();
             console.error('Error stopping playback:', error);
-            alert('<?php echo $lang->get("playback_error"); ?>');
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Next track
+    function nextTrack() {
+        if (!currentPlatform) return;
+        
+        fetch('player.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=next_track&platform=${currentPlatform}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updatePlaybackStatus();
+            } else {
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
+            }
+        })
+        .catch(error => {
+            console.error('Error skipping track:', error);
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Previous track
+    function previousTrack() {
+        if (!currentPlatform) return;
+        
+        fetch('player.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=previous_track&platform=${currentPlatform}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updatePlaybackStatus();
+            } else {
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
+            }
+        })
+        .catch(error => {
+            console.error('Error going to previous track:', error);
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Set volume
+    function setVolume(volume) {
+        if (!currentPlatform) return;
+        
+        fetch('player.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=set_volume&platform=${currentPlatform}&volume=${volume}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.warn('Volume setting failed:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error setting volume:', error);
+        });
+    }
+    
+    // Seek to position
+    function seek(position) {
+        if (!currentPlatform) return;
+        
+        fetch('player.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=seek&platform=${currentPlatform}&position=${position}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.warn('Seek failed:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error seeking:', error);
         });
     }
     
@@ -497,6 +825,7 @@ $success = $_GET['success'] ?? '';
         .then(data => {
             playbackStatus = data;
             updateTrackInfo();
+            updatePlayButton();
         })
         .catch(error => {
             console.error('Error updating status:', error);
@@ -505,30 +834,123 @@ $success = $_GET['success'] ?? '';
     
     // Update track information display
     function updateTrackInfo() {
-        const trackInfo = document.getElementById('track-info');
-        const trackDetails = document.getElementById('track-details');
+        const currentTrack = document.getElementById('current-track');
+        const trackTitle = document.getElementById('track-title');
+        const trackArtist = document.getElementById('track-artist');
+        const trackAlbum = document.getElementById('track-album');
+        const trackArtwork = document.getElementById('track-artwork');
+        const trackDuration = document.getElementById('track-duration');
+        const playbackStatusText = document.getElementById('playback-status');
+        const progressBar = document.getElementById('progress-bar');
+        const progressSlider = document.getElementById('progress-slider');
+        const currentTime = document.getElementById('current-time');
+        const totalTime = document.getElementById('total-time');
         
         if (playbackStatus && playbackStatus.success && playbackStatus.playing) {
-            trackInfo.style.display = 'block';
-            trackDetails.innerHTML = `
-                <p><strong>${playbackStatus.track || 'Unknown Track'}</strong></p>
-                <p>${playbackStatus.artist || 'Unknown Artist'}</p>
-                <div class="mt-2">
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-purple-600 h-2 rounded-full" style="width: ${(playbackStatus.progress / playbackStatus.duration) * 100}%"></div>
-                    </div>
-                </div>
-            `;
+            currentTrack.style.display = 'block';
+            
+            // Update track info
+            trackTitle.textContent = playbackStatus.track || 'Unknown Track';
+            trackArtist.textContent = playbackStatus.artist || 'Unknown Artist';
+            trackAlbum.textContent = playbackStatus.album || 'Unknown Album';
+            
+            // Update artwork
+            if (playbackStatus.artwork) {
+                trackArtwork.src = playbackStatus.artwork;
+                trackArtwork.style.display = 'block';
+            } else {
+                trackArtwork.style.display = 'none';
+            }
+            
+            // Update progress
+            const progress = playbackStatus.progress || 0;
+            const duration = playbackStatus.duration || 0;
+            const progressPercent = duration > 0 ? (progress / duration) * 100 : 0;
+            
+            progressBar.style.width = progressPercent + '%';
+            progressSlider.value = progressPercent;
+            
+            // Update time displays
+            currentTime.textContent = formatTime(progress);
+            totalTime.textContent = formatTime(duration);
+            trackDuration.textContent = `${formatTime(progress)} / ${formatTime(duration)}`;
+            
+            // Update status
+            playbackStatusText.textContent = 'Playing';
+            isPlaying = true;
         } else {
-            trackInfo.style.display = 'none';
+            currentTrack.style.display = 'none';
+            isPlaying = false;
+        }
+    }
+    
+    // Update play button
+    function updatePlayButton() {
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = playBtn.querySelector('i');
+        
+        if (isPlaying) {
+            playIcon.className = 'fas fa-pause text-xl';
+        } else {
+            playIcon.className = 'fas fa-play text-xl';
         }
     }
     
     // Enable player controls
     function enableControls() {
         document.getElementById('play-btn').disabled = false;
-        document.getElementById('pause-btn').disabled = false;
+        document.getElementById('prev-btn').disabled = false;
         document.getElementById('next-btn').disabled = false;
+    }
+    
+    // Disable player controls
+    function disableControls() {
+        document.getElementById('play-btn').disabled = true;
+        document.getElementById('prev-btn').disabled = true;
+        document.getElementById('next-btn').disabled = true;
+    }
+    
+    // Format time in MM:SS
+    function formatTime(ms) {
+        if (!ms) return '0:00';
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Show loading state
+    function showLoading() {
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = playBtn.querySelector('i');
+        playIcon.className = 'fas fa-spinner loading-spinner text-xl';
+        playBtn.disabled = true;
+    }
+    
+    // Hide loading state
+    function hideLoading() {
+        const playBtn = document.getElementById('play-btn');
+        playBtn.disabled = false;
+        updatePlayButton();
+    }
+    
+    // Show error message
+    function showError(message) {
+        // Create temporary error alert
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-error mb-6 animate-fade-in';
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i>
+            <span>${message}</span>
+        `;
+        
+        const container = document.querySelector('.container');
+        container.insertBefore(alert, container.firstChild);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
     }
     
     // Open platform-specific page
@@ -555,13 +977,12 @@ $success = $_GET['success'] ?? '';
         alert('<?php echo $lang->get("import_playlist_feature"); ?>');
     }
     
-    // Next track
-    function nextTrack() {
-        alert('<?php echo $lang->get("next_track_feature"); ?>');
-    }
-    
-    // Update status periodically
-    setInterval(updatePlaybackStatus, 5000);
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (updateInterval) {
+            clearInterval(updateInterval);
+        }
+    });
     </script>
 </body>
 </html> 
