@@ -146,11 +146,43 @@ $success = $success ?? $_GET['success'] ?? '';
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50">
     <?php include 'components/header.php'; ?>
     
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+        <div class="sidebar-backdrop" id="sidebar-backdrop" style="display:none;"></div>
+        <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+            <div class="flex items-center">
+                <i class="fas fa-music text-2xl text-primary"></i>
+                <span class="ml-2 text-xl font-bold text-gray-900">Playlist Manager</span>
+            </div>
+            <button id="sidebar-toggle" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <nav class="flex flex-col py-4">
+            <a href="admin.php" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-shield-alt mr-2"></i>
+                <span class="text-sm font-medium"><?php echo $lang->get('admin_panel'); ?></span>
+            </a>
+            <a href="admin.php#users" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-users mr-2"></i>
+                <span class="text-sm font-medium"><?php echo $lang->get('user_management'); ?></span>
+            </a>
+            <a href="admin.php#settings" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-cog mr-2"></i>
+                <span class="text-sm font-medium"><?php echo $lang->get('system_settings'); ?></span>
+            </a>
+            <a href="admin.php#activity" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-history mr-2"></i>
+                <span class="text-sm font-medium"><?php echo $lang->get('recent_activity'); ?></span>
+            </a>
+        </nav>
+    </div>
+
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
+    <main id="main-content" class="container mx-auto px-4 py-8">
         <!-- Page Header -->
         <div class="mb-8">
             <div class="flex items-center justify-between">
@@ -587,6 +619,29 @@ $success = $success ?? $_GET['success'] ?? '';
             }
         });
     });
+
+    // Sidebar toggle functionality (desktop)
+    document.getElementById('sidebar-toggle').addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+    });
+    // Mobile sidebar logic
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+    if (mobileMenuBtn && sidebar && sidebarBackdrop) {
+        mobileMenuBtn.style.display = 'inline-flex';
+        mobileMenuBtn.addEventListener('click', function() {
+            sidebar.classList.add('open');
+            sidebarBackdrop.style.display = 'block';
+        });
+        sidebarBackdrop.addEventListener('click', function() {
+            sidebar.classList.remove('open');
+            sidebarBackdrop.style.display = 'none';
+        });
+    }
     </script>
 </body>
 </html> 
