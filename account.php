@@ -34,6 +34,7 @@ $success = $_GET['success'] ?? '';
 <body class="bg-gray-50">
     <!-- Sidebar -->
     <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+        <div class="sidebar-backdrop" id="sidebar-backdrop" style="display:none;"></div>
         <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200">
             <div class="flex items-center">
                 <i class="fas fa-music text-2xl text-primary"></i>
@@ -336,14 +337,28 @@ $success = $_GET['success'] ?? '';
     <!-- Modern JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.3.11/dist/alpine.min.js" defer></script>
     <script>
-        // Sidebar toggle functionality
+        // Sidebar toggle functionality (desktop)
         document.getElementById('sidebar-toggle').addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
-            
             sidebar.classList.toggle('collapsed');
             mainContent.classList.toggle('expanded');
         });
+        // Mobile sidebar logic
+        const mobileMenuBtn = document.getElementById('sidebar-toggle'); // Changed from 'mobile-menu-btn' to 'sidebar-toggle'
+        const sidebar = document.getElementById('sidebar');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+        if (mobileMenuBtn && sidebar && sidebarBackdrop) {
+            mobileMenuBtn.style.display = 'inline-flex';
+            mobileMenuBtn.addEventListener('click', function() {
+                sidebar.classList.add('open');
+                sidebarBackdrop.style.display = 'block';
+            });
+            sidebarBackdrop.addEventListener('click', function() {
+                sidebar.classList.remove('open');
+                sidebarBackdrop.style.display = 'none';
+            });
+        }
 
         // Analytics Chart
         const ctx = document.getElementById('analyticsChart').getContext('2d');

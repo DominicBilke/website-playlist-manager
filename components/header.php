@@ -14,7 +14,10 @@ if (!isset($lang)) {
                 <i class="fas fa-music text-primary"></i>
                 <span>Playlist Manager</span>
             </div>
-
+            <!-- Mobile Menu Button -->
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open menu" style="display:none;">
+                <i class="fas fa-bars"></i>
+            </button>
             <!-- Navigation -->
             <nav class="header-nav">
                 <?php if (isset($_SESSION['user_id'])): ?>
