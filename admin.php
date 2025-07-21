@@ -2,7 +2,14 @@
 require 'script/init.php';
 
 // Require admin access
-$auth->requireAdmin();
+if(!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+if (!$pdo) {
+    echo '<div style="color:red;">Database connection failed. Please contact the administrator.</div>';
+    exit;
+}
 
 // Get current user
 $currentUser = $auth->getCurrentUser();
@@ -354,27 +361,91 @@ $success = $success ?? $_GET['success'] ?? '';
                     <div class="card-body">
                         <form method="POST" class="space-y-6">
                             <input type="hidden" name="action" value="update_system_setting">
-                            
-                            <?php foreach ($systemSettings as $setting): ?>
-                            <div class="form-group">
-                                <label for="<?php echo $setting['setting_key']; ?>" class="form-label">
-                                    <?php echo ucwords(str_replace('_', ' ', $setting['setting_key'])); ?>
-                                </label>
-                                <div class="flex space-x-2">
-                                    <input 
-                                        type="text" 
-                                        id="<?php echo $setting['setting_key']; ?>" 
-                                        name="setting_value" 
-                                        class="form-input flex-1" 
-                                        value="<?php echo htmlspecialchars($setting['setting_value']); ?>"
-                                    >
-                                    <input type="hidden" name="setting_key" value="<?php echo $setting['setting_key']; ?>">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save"></i>
-                                    </button>
+
+                            <!-- Platform API Credentials Section -->
+                            <div class="mb-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">Platform API Credentials</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <?php
+                                    $platform_keys = [
+                                        // Spotify
+                                        'spotify_client_id' => 'Spotify Client ID',
+                                        'spotify_client_secret' => 'Spotify Client Secret',
+                                        'spotify_redirect_uri' => 'Spotify Redirect URI',
+                                        // Apple Music
+                                        'apple_music_team_id' => 'Apple Music Team ID',
+                                        'apple_music_key_id' => 'Apple Music Key ID',
+                                        'apple_music_private_key_path' => 'Apple Music Private Key Path',
+                                        // YouTube
+                                        'youtube_client_id' => 'YouTube Client ID',
+                                        'youtube_client_secret' => 'YouTube Client Secret',
+                                        'youtube_redirect_uri' => 'YouTube Redirect URI',
+                                        // Amazon (future)
+                                        'amazon_client_id' => 'Amazon Client ID',
+                                        'amazon_client_secret' => 'Amazon Client Secret',
+                                        'amazon_redirect_uri' => 'Amazon Redirect URI',
+                                    ];
+                                    $help_texts = [
+                                        'spotify_client_id' => 'Find in your Spotify Developer Dashboard.',
+                                        'spotify_client_secret' => 'Find in your Spotify Developer Dashboard.',
+                                        'spotify_redirect_uri' => 'Should match the redirect URI set in your Spotify app.',
+                                        'apple_music_team_id' => 'Apple Developer Team ID.',
+                                        'apple_music_key_id' => 'Apple Music Key ID for MusicKit.',
+                                        'apple_music_private_key_path' => 'Path to your Apple Music private key (.p8 file).',
+                                        'youtube_client_id' => 'Google Cloud OAuth Client ID.',
+                                        'youtube_client_secret' => 'Google Cloud OAuth Client Secret.',
+                                        'youtube_redirect_uri' => 'Should match the redirect URI set in your Google Cloud app.',
+                                        'amazon_client_id' => 'Amazon Developer Client ID.',
+                                        'amazon_client_secret' => 'Amazon Developer Client Secret.',
+                                        'amazon_redirect_uri' => 'Should match the redirect URI set in your Amazon app.',
+                                    ];
+                                    $existing_keys = array_column($systemSettings, 'setting_key');
+                                    foreach ($platform_keys as $key => $label):
+                                        $setting = null;
+                                        foreach ($systemSettings as $s) {
+                                            if ($s['setting_key'] === $key) { $setting = $s; break; }
+                                        }
+                                        $value = $setting['setting_value'] ?? '';
+                                        $desc = $setting['description'] ?? $help_texts[$key];
+                                    ?>
+                                    <div class="form-group">
+                                        <label for="<?php echo $key; ?>" class="form-label"><?php echo $label; ?></label>
+                                        <div class="flex space-x-2">
+                                            <input type="text" id="<?php echo $key; ?>" name="setting_value" class="form-input flex-1" value="<?php echo htmlspecialchars($value); ?>">
+                                            <input type="hidden" name="setting_key" value="<?php echo $key; ?>">
+                                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i></button>
+                                        </div>
+                                        <p class="form-help"><?php echo htmlspecialchars($desc); ?></p>
+                                    </div>
+                                    <?php endforeach; ?>
                                 </div>
-                                <p class="form-help"><?php echo htmlspecialchars($setting['description'] ?? ''); ?></p>
                             </div>
+                            <!-- End Platform API Credentials Section -->
+
+                            <!-- Other System Settings -->
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2 mt-8">Other System Settings</h3>
+                            <?php foreach ($systemSettings as $setting): ?>
+                                <?php if (!array_key_exists($setting['setting_key'], $platform_keys)): ?>
+                                <div class="form-group">
+                                    <label for="<?php echo $setting['setting_key']; ?>" class="form-label">
+                                        <?php echo ucwords(str_replace('_', ' ', $setting['setting_key'])); ?>
+                                    </label>
+                                    <div class="flex space-x-2">
+                                        <input 
+                                            type="text" 
+                                            id="<?php echo $setting['setting_key']; ?>" 
+                                            name="setting_value" 
+                                            class="form-input flex-1" 
+                                            value="<?php echo htmlspecialchars($setting['setting_value']); ?>"
+                                        >
+                                        <input type="hidden" name="setting_key" value="<?php echo $setting['setting_key']; ?>">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </div>
+                                    <p class="form-help"><?php echo htmlspecialchars($setting['description'] ?? ''); ?></p>
+                                </div>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         </form>
                     </div>

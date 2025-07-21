@@ -3,9 +3,46 @@ require 'script/inc_start.php';
 require 'script/languages.php';
 
 // Check if user is logged in
-if(!isset($_SESSION['id'])) {
+if(!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
+}
+if (!$pdo) {
+    echo '<div style="color:red;">Database connection failed. Please contact the administrator.</div>';
+    exit;
+}
+
+// Handle connect/disconnect platform actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['connect_platform'])) {
+        $platform = $_POST['connect_platform'];
+        require_once 'script/PlatformManager.php';
+        $platformManager = new PlatformManager($pdo, $lang, $_SESSION['user_id']);
+        $platformInstance = $platformManager->getPlatform($platform);
+        if ($platformInstance) {
+            $result = $platformInstance->authenticate();
+            if (isset($result['auth_url'])) {
+                // Redirect to OAuth URL
+                header('Location: ' . $result['auth_url']);
+                exit;
+            } else {
+                $success_message = $result['message'] ?? 'Authentication started.';
+            }
+        } else {
+            $error_message = 'Platform not available.';
+        }
+    }
+    if (isset($_POST['disconnect_platform'])) {
+        $platform = $_POST['disconnect_platform'];
+        // Remove token from api_tokens table
+        try {
+            $stmt = $pdo->prepare("DELETE FROM api_tokens WHERE user_id = ? AND platform = ?");
+            $stmt->execute([$_SESSION['user_id'], $platform]);
+            $success_message = $lang->get('account_disconnected');
+        } catch (Exception $e) {
+            $error_message = $lang->get('delete_error') . ': ' . $e->getMessage();
+        }
+    }
 }
 
 // Handle form submission
@@ -24,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
             $stmt = $pdo->prepare("UPDATE users SET daytime_from = ?, daytime_to = ?, days = ? WHERE id = ?");
-            $stmt->execute([$daytime_from, $daytime_to, $days, $_SESSION['id']]);
+            $stmt->execute([$daytime_from, $daytime_to, $days, $_SESSION['user_id']]);
             
             // Update session
             $_SESSION['daytime_from'] = $daytime_from;
@@ -54,13 +91,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Verify current password
                 $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
-                $stmt->execute([$_SESSION['id']]);
+                $stmt->execute([$_SESSION['user_id']]);
                 $user = $stmt->fetch();
                 
                 if (password_verify($current_password, $user['password'])) {
                     $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
                     $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
-                    $stmt->execute([$hashed_password, $_SESSION['id']]);
+                    $stmt->execute([$hashed_password, $_SESSION['user_id']]);
                     
                     $success_message = $lang->getCurrentLanguage() === 'de' ? 'Passwort erfolgreich geändert!' : 'Password changed successfully!';
                 } else {
@@ -82,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 
                 $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
-                $stmt->execute([$_SESSION['id']]);
+                $stmt->execute([$_SESSION['user_id']]);
                 
                 session_destroy();
                 header("Location: index.php");
@@ -199,8 +236,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </header>
 
-        <!-- Main Content -->
+        <!-- Connected Music Platforms Section -->
         <main class="p-6">
+            <div class="mb-8">
+                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-music text-green-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 ml-3"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verbundene Musikplattformen' : 'Connected Music Platforms'; ?></h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <?php
+                        require_once 'script/PlatformManager.php';
+                        $platformManager = new PlatformManager($pdo, $lang, $_SESSION['user_id']);
+                        $platforms = [
+                            'spotify' => ['icon' => 'fab fa-spotify text-green-600', 'label' => 'Spotify'],
+                            'apple_music' => ['icon' => 'fab fa-apple text-pink-600', 'label' => 'Apple Music'],
+                            'youtube' => ['icon' => 'fab fa-youtube text-red-600', 'label' => 'YouTube Music'],
+                            'amazon' => ['icon' => 'fab fa-amazon text-orange-600', 'label' => 'Amazon Music'],
+                        ];
+                        $statuses = $platformManager->getAllPlatformStatuses();
+                        foreach ($platforms as $key => $meta):
+                            $status = $statuses[$key] ?? ['connected' => false, 'message' => 'Not connected'];
+                        ?>
+                        <div class="flex items-center space-x-4 p-4 border rounded-lg <?php echo $status['connected'] ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50'; ?>">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center <?php echo $status['connected'] ? 'bg-green-200' : 'bg-gray-200'; ?>">
+                                <i class="<?php echo $meta['icon']; ?> text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-900"><?php echo $meta['label']; ?></div>
+                                <div class="text-xs text-gray-500"><?php echo $status['connected'] ? ($status['user'] ?? $lang->get('account_connected')) : $lang->get('account_disconnected'); ?></div>
+                            </div>
+                            <div>
+                                <?php if ($status['connected']): ?>
+                                    <form method="POST" style="display:inline;">
+                                        <input type="hidden" name="disconnect_platform" value="<?php echo $key; ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm"><?php echo $lang->get('disconnect_account'); ?></button>
+                                    </form>
+                                <?php else: ?>
+                                    <form method="POST" style="display:inline;">
+                                        <input type="hidden" name="connect_platform" value="<?php echo $key; ?>">
+                                        <button type="submit" class="btn btn-primary btn-sm"><?php echo $lang->get('connect_account'); ?></button>
+                                    </form>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
             <!-- Success/Error Messages -->
             <?php if (isset($success_message) && $success_message): ?>
                 <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">

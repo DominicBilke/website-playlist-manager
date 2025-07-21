@@ -2,14 +2,14 @@
 require 'inc_start.php';
 
 // Check if user is logged in
-if(!isset($_SESSION['id'])) {
+if(!isset($_SESSION['user_id'])) {
     http_response_code(401);
     exit('Unauthorized');
 }
 
 // Get current timestamp
 $timestamp = date('Y-m-d H:i:s');
-$user_id = $_SESSION['id'];
+$user_id = $_SESSION['user_id'];
 $platform = 'amazon_music';
 
 try {

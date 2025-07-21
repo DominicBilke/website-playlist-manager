@@ -24,7 +24,7 @@ foreach ($pdo->query($sql) as $row) {
  $_SESSION['daytime_random'] = $row['daytime_random'];
  $_SESSION['login'] = $row['login'];
  $_SESSION['password'] = $row['password'];
- $_SESSION['id'] = $row['id'];
+ $_SESSION['user_id'] = $row['id'];
  $_SESSION['days'] = $row['days'];
  if($_SESSION['days_random']=='1') { 
 	$r = rand(0,7);
@@ -78,7 +78,7 @@ $password = "WaBtpcMKcgf49wqp";
 
 $pdo = new PDO('mysql:host=localhost;dbname=d03c87b1', 'd03c87b1', 'WaBtpcMKcgf49wqp');
 
-$sql = "UPDATE users SET login_counter=login_counter+1 WHERE id=".$_SESSION['id'];
+$sql = "UPDATE users SET login_counter=login_counter+1 WHERE id=".$_SESSION['user_id'];
 
 // Prepare statement
 $stmt = $pdo->prepare($sql);

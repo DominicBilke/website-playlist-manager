@@ -43,6 +43,7 @@ foreach ($pdo->query($sql) as $row) {
  $_SESSION['db_token'] = $row['db_token'];*/
  $_SESSION['editaccount']['db_token'] = $row['db_token'];
  $login=1;
+ $_SESSION['user_id'] = $row['id'];
 }
 
 if(isset($login)) $meldung='&meldung=Update der Benutzerdaten erfolgreich!';

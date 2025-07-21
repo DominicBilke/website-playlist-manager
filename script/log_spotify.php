@@ -4,17 +4,17 @@
 */
 session_start();
 
-if(isset($_COOKIE['session_data1']) && (!isset($_SESSION['id']) || !$_SESSION['id'])) {
+if(isset($_COOKIE['session_data1']) && (!isset($_SESSION['user_id']) || !$_SESSION['user_id'])) {
   $data = explode(' -|- ', $_COOKIE['session_data1']); 
-  $_SESSION['id'] = $data[0];
+  $_SESSION['user_id'] = $data[0];
   $_SESSION['login'] = $data[1];
   $_SESSION['daytime_from'] = $data[2];
   $_SESSION['daytime_to'] = $data[3];
   $_SESSION['days'] = $data[4];
 }
 
-if(isset($_SESSION['id']))
-  setcookie('session_data1', implode(' -|- ', [$_SESSION['id'], $_SESSION['login'], $_SESSION['daytime_from'], $_SESSION['daytime_to'], $_SESSION['days']]), time() + (86400 * 30), "/");
+if(isset($_SESSION['user_id']))
+  setcookie('session_data1', implode(' -|- ', [$_SESSION['user_id'], $_SESSION['login'], $_SESSION['daytime_from'], $_SESSION['daytime_to'], $_SESSION['days']]), time() + (86400 * 30), "/");
 
 function matching_time($stamp_from, $stamp_to, $time_from, $time_to, $days) {
  $stamp_from_d = date('w', $stamp_from);
@@ -83,11 +83,11 @@ $username = "d03c87b1";
 $password = "WaBtpcMKcgf49wqp";
 
 
-if(isset($_SESSION['id']) && $_SESSION['id']) {
+if(isset($_SESSION['user_id']) && $_SESSION['user_id']) {
 if(isset($_SESSION['playing_time'])) {
 $pdo = new PDO('mysql:host=localhost;dbname=d03c87b1', 'd03c87b1', 'WaBtpcMKcgf49wqp');
 
-$sql = "SELECT playing_time FROM users WHERE id=".$_SESSION['id'];
+$sql = "SELECT playing_time FROM users WHERE id=".$_SESSION['user_id'];
 foreach ($pdo->query($sql) as $row) {
 	$playing_time = array_explode_with_keys($row['playing_time']);
 }
@@ -110,7 +110,7 @@ if(isset($_SESSION['playing_time']) && $_SESSION['playing_time'][1] != 0) {
 $playing_time = array_implode_with_keys($playing_time);
 
 if($playing_time) {
-$sql = "UPDATE users SET currently_playing=".$playing.", playing_time='".$playing_time."' WHERE id=".$_SESSION['id'];
+$sql = "UPDATE users SET currently_playing=".$playing.", playing_time='".$playing_time."' WHERE id=".$_SESSION['user_id'];
 
 // Prepare statement
 $stmt = $pdo->prepare($sql);
@@ -122,7 +122,7 @@ $stmt->execute();
 else 
 {
 $pdo = new PDO('mysql:host=localhost;dbname=d03c87b1', 'd03c87b1', 'WaBtpcMKcgf49wqp');
-$sql = "UPDATE users SET currently_playing=".$playing." WHERE id=".$_SESSION['id'];
+$sql = "UPDATE users SET currently_playing=".$playing." WHERE id=".$_SESSION['user_id'];
 
 // Prepare statement
 $stmt = $pdo->prepare($sql);
