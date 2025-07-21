@@ -1,25 +1,95 @@
 <?php
 require 'script/inc_start.php';
 require 'script/languages.php';
+require 'script/language_utils.php';
+require_once 'script/auth.php';
+require_once 'script/PlatformManager.php';
 
-// Check if user is logged in
-if(!isset($_SESSION['id'])) {
-    header("Location: login.php");
+// Initialize auth system
+$auth = new Auth($pdo, $lang);
+
+// Require authentication
+$auth->requireAuth();
+
+// Get current user
+$currentUser = $auth->getCurrentUser();
+
+// Initialize platform manager
+$platformManager = new PlatformManager($pdo, $lang, $currentUser['id']);
+$appleMusicPlatform = $platformManager->getPlatform('apple_music');
+
+// Handle authentication callback
+if (isset($_GET['code'])) {
+    $result = $appleMusicPlatform->authenticate($_GET['code']);
+    if ($result['success']) {
+        $success_message = $lang->get('apple_music_connected_successfully');
+    } else {
+        $error_message = $result['message'];
+    }
+}
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+    
+    $action = $_POST['action'];
+    $playlist_id = $_POST['playlist_id'] ?? null;
+    $track_uri = $_POST['track_uri'] ?? null;
+    
+    switch ($action) {
+        case 'start_playback':
+            $result = $appleMusicPlatform->startPlayback($playlist_id);
+            break;
+        case 'stop_playback':
+            $result = $appleMusicPlatform->stopPlayback();
+            break;
+        case 'get_status':
+            $result = $appleMusicPlatform->getPlaybackStatus();
+            break;
+        case 'get_playlists':
+            $result = $appleMusicPlatform->getPlaylists();
+            break;
+        case 'next_track':
+            $result = $appleMusicPlatform->nextTrack();
+            break;
+        case 'previous_track':
+            $result = $appleMusicPlatform->previousTrack();
+            break;
+        case 'set_volume':
+            $volume = $_POST['volume'] ?? 50;
+            $result = $appleMusicPlatform->setVolume($volume);
+            break;
+        case 'seek':
+            $position = $_POST['position'] ?? 0;
+            $result = $appleMusicPlatform->seek($position);
+            break;
+        default:
+            $result = ['success' => false, 'message' => 'Invalid action'];
+    }
+    
+    echo json_encode($result);
     exit;
 }
 
-require 'script/AppleMusic.php';
+// Get platform status
+$status = $appleMusicPlatform->getStatus();
+$playlists = $status['connected'] ? $appleMusicPlatform->getPlaylists() : [];
 
-$applemusic = new AppleMusic();
-$applemusic->Connect();
+// Get error/success messages
+$error_message = $error_message ?? $_GET['error'] ?? '';
+$success_message = $success_message ?? $_GET['success'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $lang->getCurrentLanguage(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apple Music Player - Playlist Manager</title>
-    <meta name="description" content="Play your Apple Music playlists with automated scheduling">
+    <title><?php echo $lang->get('apple_music'); ?> - Playlist Manager</title>
+    <meta name="description" content="<?php echo $lang->getCurrentLanguage() === 'de' ? 'Apple Music Integration und Playlist-Management' : 'Apple Music Integration and Playlist Management'; ?>">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="assets/css/main.css" as="style">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
     
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -27,444 +97,906 @@ $applemusic->Connect();
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Apple MusicKit -->
-    <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js" data-web-components async></script>
-    
     <!-- Custom Styles -->
+    <link href="assets/css/main.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .gradient-bg { background: linear-gradient(135deg, #FA243C 0%, #FF6B6B 100%); }
-        .card-hover { transition: all 0.3s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        .sidebar { transition: all 0.3s ease; }
-        .sidebar.collapsed { width: 4rem; }
-        .main-content { transition: all 0.3s ease; }
-        .main-content.expanded { margin-left: 4rem; }
-        .apple-pink { background-color: #FA243C; }
-        .apple-pink:hover { background-color: #FF6B6B; }
-        .player-container { min-height: 600px; }
-        .status-indicator { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .music-player { border-radius: 12px; overflow: hidden; }
+        .player-progress {
+            background: linear-gradient(90deg, #fa243c 0%, #ff6b6b 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: #e5e7eb;
+            outline: none;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #fa243c;
+            cursor: pointer;
+        }
+        
+        .volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #fa243c;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .playlist-item {
+            transition: all 0.2s ease;
+        }
+        
+        .playlist-item:hover {
+            background-color: #f3f4f6;
+            transform: translateX(4px);
+        }
+        
+        .playlist-item.active {
+            background-color: #fce7f3;
+            border-left: 4px solid #fa243c;
+        }
+        
+        .track-artwork {
+            transition: transform 0.2s ease;
+        }
+        
+        .track-artwork:hover {
+            transform: scale(1.05);
+        }
+        
+        .control-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .status-indicator {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Sidebar -->
-    <div id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
-        <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-            <div class="flex items-center">
-                <i class="fas fa-music text-2xl text-purple-600"></i>
-                <span class="ml-2 text-xl font-bold text-gray-900">Playlist Manager</span>
-            </div>
-            <button id="sidebar-toggle" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-        
-        <nav class="mt-8 px-4">
-            <div class="space-y-2">
-                <a href="account.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-                    <i class="fas fa-tachometer-alt w-5 h-5"></i>
-                    <span class="ml-3"><?php echo $lang->get('dashboard'); ?></span>
-                </a>
-                <a href="spotify_play.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-                    <i class="fab fa-spotify w-5 h-5"></i>
-                    <span class="ml-3"><?php echo $lang->get('spotify'); ?></span>
-                </a>
-                <a href="applemusic_play.php" class="flex items-center px-4 py-3 text-purple-600 bg-purple-50 rounded-lg">
-                    <i class="fab fa-apple w-5 h-5"></i>
-                    <span class="ml-3 font-medium"><?php echo $lang->get('apple_music'); ?></span>
-                </a>
-                <a href="youtube_play.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-                    <i class="fab fa-youtube w-5 h-5"></i>
-                    <span class="ml-3"><?php echo $lang->get('youtube_music'); ?></span>
-                </a>
-                <a href="amazon_play.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-                    <i class="fab fa-amazon w-5 h-5"></i>
-                    <span class="ml-3"><?php echo $lang->get('amazon_music'); ?></span>
-                </a>
-                <a href="editaccount.php" class="flex items-center px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-                    <i class="fas fa-cog w-5 h-5"></i>
-                    <span class="ml-3"><?php echo $lang->get('settings'); ?></span>
-                </a>
-            </div>
-        </nav>
-        
-        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-            <div class="flex items-center">
-                <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user text-white text-sm"></i>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($_SESSION['login']); ?></p>
-                    <p class="text-xs text-gray-500">Team <?php echo htmlspecialchars($_SESSION['team'] ?? 'N/A'); ?></p>
-                </div>
-            </div>
-            <a href="script/logout.php" class="mt-3 flex items-center px-4 py-2 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                <i class="fas fa-sign-out-alt w-4 h-4"></i>
-                <span class="ml-3"><?php echo $lang->get('sign_out'); ?></span>
-            </a>
-        </div>
-    </div>
+    <?php include 'components/header.php'; ?>
 
     <!-- Main Content -->
-    <div id="main-content" class="main-content ml-64 min-h-screen">
-        <!-- Top Navigation -->
-        <header class="bg-white shadow-sm border-b border-gray-200">
-            <div class="flex items-center justify-between h-16 px-6">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-pink-500 rounded-lg flex items-center justify-center mr-4">
-                        <i class="fab fa-apple text-white text-xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900"><?php echo $lang->get('apple_music'); ?> <?php echo $lang->get('player'); ?></h1>
-                        <p class="text-sm text-gray-600"><?php echo $lang->get('automated_playback'); ?></p>
-                    </div>
+    <div class="container mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                        <i class="fab fa-apple text-pink-600 mr-3"></i><?php echo $lang->get('apple_music'); ?>
+                    </h1>
+                    <p class="text-gray-600">
+                        <?php echo $lang->getCurrentLanguage() === 'de' 
+                            ? 'Vollständige Integration mit automatischer Wiedergabe und Playlist-Management'
+                            : 'Full integration with automated playback and playlist management'; ?>
+                    </p>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 bg-pink-500 rounded-full mr-2 status-indicator"></div>
-                        <span class="text-sm text-pink-600 font-medium">Live</span>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-500"><?php echo $lang->get('welcome'); ?></p>
+                        <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($currentUser['login']); ?></p>
+                        <p class="text-xs text-gray-500"><?php echo $lang->get('team'); ?>: <?php echo htmlspecialchars($currentUser['team']); ?></p>
                     </div>
-                    <a href="applemusic_manage.php" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">
-                        <i class="fas fa-cog mr-2"></i><?php echo $lang->get('settings'); ?>
-                    </a>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="p-6">
-            <!-- Algorithm Information -->
-            <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
-                <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-brain text-blue-600"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-900 ml-3">Automation Algorithm</h3>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <div class="flex items-center">
-                            <i class="fas fa-clock text-green-500 mr-3"></i>
-                            <span class="text-sm text-gray-700">Playing time defined in user account</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-play text-green-500 mr-3"></i>
-                            <span class="text-sm text-gray-700">Random play time: 61-600 seconds</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-pause text-orange-500 mr-3"></i>
-                            <span class="text-sm text-gray-700">Random pause time: 0-600 seconds</span>
-                        </div>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="flex items-center">
-                            <i class="fas fa-magic text-purple-500 mr-3"></i>
-                            <span class="text-sm text-gray-700">Automatic playback based on settings</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-random text-blue-500 mr-3"></i>
-                            <span class="text-sm text-gray-700">Shuffle and repeat all songs</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-info-circle text-yellow-500 mr-3"></i>
-                            <span class="text-sm text-gray-700">Requires paid Apple Music account</span>
-                        </div>
+                    <div class="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
+                        <i class="fab fa-apple text-pink-600 text-xl"></i>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Current Status -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-600">Current Status</p>
-                            <p class="text-lg font-semibold text-gray-900" id="player-status">Initializing...</p>
+        <!-- Alerts -->
+        <?php if ($success_message): ?>
+            <div class="alert alert-success mb-6 animate-fade-in">
+                <i class="fas fa-check-circle"></i>
+                <span><?php echo htmlspecialchars($success_message); ?></span>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($error_message): ?>
+            <div class="alert alert-error mb-6 animate-fade-in">
+                <i class="fas fa-exclamation-circle"></i>
+                <span><?php echo htmlspecialchars($error_message); ?></span>
+            </div>
+        <?php endif; ?>
+
+        <!-- Connection Status -->
+        <?php if (!$status['connected']): ?>
+            <!-- Not Connected State -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Connection Card -->
+                <div class="lg:col-span-2">
+                    <div class="card mb-6 animate-fade-in">
+                        <div class="card-body text-center">
+                            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fab fa-apple text-gray-400 text-3xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-semibold text-gray-900 mb-4">
+                                <?php echo $lang->getCurrentLanguage() === 'de' ? 'Apple Music verbinden' : 'Connect Apple Music'; ?>
+                            </h3>
+                            <p class="text-gray-600 mb-6 text-lg">
+                                <?php echo $lang->getCurrentLanguage() === 'de' 
+                                    ? 'Verbinden Sie Ihr Apple Music-Konto, um auf Ihre Playlists zuzugreifen und Musik abzuspielen.'
+                                    : 'Connect your Apple Music account to access your playlists and play music.'; ?>
+                            </p>
+                            <div class="space-y-4">
+                                <button class="btn btn-primary btn-lg" onclick="connectAppleMusic()">
+                                    <i class="fab fa-apple mr-3"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Apple Music verbinden' : 'Connect Apple Music'; ?>
+                                </button>
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-shield-alt mr-2"></i>
+                                    <?php echo $lang->getCurrentLanguage() === 'de' 
+                                        ? 'Sichere Verbindung über Apple MusicKit'
+                                        : 'Secure connection via Apple MusicKit'; ?>
+                                </div>
+                            </div>
                         </div>
-                        <div class="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
-                            <i class="fab fa-apple text-pink-600 text-xl"></i>
+                    </div>
+
+                    <!-- Features Preview -->
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-star mr-2 text-yellow-500"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verfügbare Features' : 'Available Features'; ?>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-play text-pink-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Fernsteuerung' : 'Remote Control'; ?></h3>
+                                        <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Steuern Sie Ihre Apple Music-Wiedergabe von überall' : 'Control your Apple Music playback from anywhere'; ?></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-list text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Playlist-Management' : 'Playlist Management'; ?></h3>
+                                        <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verwalten und erstellen Sie Playlists' : 'Manage and create playlists'; ?></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-chart-line text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Analytics' : 'Analytics'; ?></h3>
+                                        <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Verfolgen Sie Ihre Hörgewohnheiten' : 'Track your listening habits'; ?></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-magic text-orange-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900"><?php echo $lang->getCurrentLanguage() === 'de' ? 'KI-Playlists' : 'AI Playlists'; ?></h3>
+                                        <p class="text-sm text-gray-600"><?php echo $lang->getCurrentLanguage() === 'de' ? 'Automatisch generierte Playlists' : 'Automatically generated playlists'; ?></p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <!-- Sidebar -->
+                <div>
+                    <!-- Quick Actions -->
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-bolt mr-2"></i><?php echo $lang->get('quick_actions'); ?>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="space-y-3">
+                                <a href="https://music.apple.com" target="_blank" class="btn btn-secondary w-full">
+                                    <i class="fab fa-apple mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Apple Music öffnen' : 'Open Apple Music'; ?>
+                                </a>
+                                <a href="player.php" class="btn btn-outline w-full">
+                                    <i class="fas fa-arrow-left mr-2"></i><?php echo $lang->get('back_to_player'); ?>
+                                </a>
+                                <a href="editaccount.php" class="btn btn-outline w-full">
+                                    <i class="fas fa-cog mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Einstellungen' : 'Settings'; ?>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Help & Support -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-question-circle mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Hilfe & Support' : 'Help & Support'; ?>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="space-y-3">
+                                <div class="text-sm text-gray-600">
+                                    <p class="mb-2"><strong><?php echo $lang->getCurrentLanguage() === 'de' ? 'Benötigte Berechtigungen:' : 'Required permissions:'; ?></strong></p>
+                                    <ul class="list-disc list-inside space-y-1 text-xs">
+                                        <li><?php echo $lang->getCurrentLanguage() === 'de' ? 'Playlists lesen & bearbeiten' : 'Read & modify playlists'; ?></li>
+                                        <li><?php echo $lang->getCurrentLanguage() === 'de' ? 'Wiedergabe steuern' : 'Control playback'; ?></li>
+                                        <li><?php echo $lang->getCurrentLanguage() === 'de' ? 'Benutzerdaten lesen' : 'Read user data'; ?></li>
+                                    </ul>
+                                </div>
+                                <div class="pt-3 border-t border-gray-200">
+                                    <p class="text-xs text-gray-500">
+                                        <?php echo $lang->getCurrentLanguage() === 'de' 
+                                            ? 'Haben Sie Probleme? Kontaktieren Sie den Support.'
+                                            : 'Having issues? Contact support.'; ?>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php else: ?>
+            <!-- Connected User Info -->
+            <div class="card mb-6 animate-fade-in">
+                <div class="card-body">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-600">Playing Time</p>
-                            <p class="text-lg font-semibold text-gray-900">
-                                <?php echo htmlspecialchars($_SESSION['daytime_from'] ?? '00:00'); ?> - 
-                                <?php echo htmlspecialchars($_SESSION['daytime_to'] ?? '00:00'); ?>
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
+                                <i class="fab fa-apple text-pink-600 text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="font-semibold text-gray-900"><?php echo htmlspecialchars($status['user'] ?? 'Apple Music User'); ?></h3>
+                                <p class="text-sm text-gray-500">
+                                    <?php echo $status['premium'] ? 'Apple Music' : 'Apple Music'; ?>
+                                    <?php if ($status['email']): ?>
+                                        • <?php echo htmlspecialchars($status['email']); ?>
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-green-500 rounded-full status-indicator"></div>
+                            <span class="text-sm text-green-600 font-medium">Connected</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Player Section -->
+                <div class="lg:col-span-2">
+                    <!-- Player Card -->
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fab fa-apple mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Apple Music Player' : 'Apple Music Player'; ?>
+                            </h2>
+                            <p class="text-gray-600 mt-1">
+                                <?php echo $lang->getCurrentLanguage() === 'de' 
+                                    ? 'Steuern Sie Ihre Apple Music-Wiedergabe direkt von hier aus'
+                                    : 'Control your Apple Music playback directly from here'; ?>
                             </p>
                         </div>
-                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-clock text-blue-600 text-xl"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-600">Active Days</p>
-                            <p class="text-lg font-semibold text-gray-900"><?php echo htmlspecialchars($_SESSION['days'] ?? 'Not set'); ?></p>
-                        </div>
-                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-calendar text-purple-600 text-xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Player Section -->
-            <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-semibold text-gray-900">Apple Music Player</h3>
-                    <div class="flex space-x-2">
-                        <button id="apple-logout" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-sign-out-alt mr-2"></i>New Login
-                        </button>
-                    </div>
-                </div>
-
-                <?php if(isset($_SESSION['apple_playlist_id']) && $_SESSION['apple_playlist_id']): ?>
-                <div class="player-container">
-                    <div id="apple-music-player" class="music-player w-full h-600 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fab fa-apple text-pink-600 text-2xl"></i>
+                        <div class="card-body">
+                            <!-- Current Track Display -->
+                            <div id="current-track" class="mb-6 p-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg border border-pink-200" style="display: none;">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                                        <img id="track-artwork" src="" alt="Track Artwork" class="w-full h-full object-cover track-artwork">
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 id="track-title" class="font-semibold text-gray-900 text-lg">Track Title</h3>
+                                        <p id="track-artist" class="text-gray-600">Artist Name</p>
+                                        <p id="track-album" class="text-sm text-gray-500">Album Name</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div id="track-duration" class="text-sm text-gray-500">0:00 / 0:00</div>
+                                        <div class="text-xs text-gray-400 mt-1">
+                                            <span id="playback-status">Paused</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                <div class="mt-4">
+                                    <div class="flex items-center space-x-3">
+                                        <span id="current-time" class="text-xs text-gray-500 w-8">0:00</span>
+                                        <div class="flex-1 relative">
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div id="progress-bar" class="player-progress h-2 rounded-full" style="width: 0%"></div>
+                                            </div>
+                                            <input type="range" id="progress-slider" class="absolute inset-0 w-full h-2 opacity-0 cursor-pointer" min="0" max="100" value="0">
+                                        </div>
+                                        <span id="total-time" class="text-xs text-gray-500 w-8">0:00</span>
+                                    </div>
+                                </div>
                             </div>
-                            <p class="text-gray-600">Loading Apple Music Player...</p>
-                        </div>
-                    </div>
-                </div>
-                <?php else: ?>
-                <div class="text-center py-12">
-                    <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-exclamation-triangle text-red-600 text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">No Playlist Selected</h3>
-                    <p class="text-gray-600 mb-6">Please select an Apple Music playlist in your account settings.</p>
-                    <a href="editaccount.php" class="apple-pink hover:bg-pink-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                        <i class="fas fa-cog mr-2"></i>Configure Playlist
-                    </a>
-                </div>
-                <?php endif; ?>
-            </div>
 
-            <!-- Control Panel -->
-            <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100 mt-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Control Panel</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Auto Play</p>
-                            <p class="text-xs text-gray-600">Automated scheduling</p>
+                            <!-- Playlist Selection -->
+                            <div class="mb-6">
+                                <label class="form-label"><?php echo $lang->get('select_playlist'); ?></label>
+                                <select id="playlist-select" class="form-input">
+                                    <option value=""><?php echo $lang->get('choose_playlist'); ?></option>
+                                    <?php foreach ($playlists as $playlist): ?>
+                                        <option value="<?php echo htmlspecialchars($playlist['id']); ?>">
+                                            <?php echo htmlspecialchars($playlist['name']); ?> 
+                                            (<?php echo $playlist['tracks']; ?> tracks)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <!-- Player Controls -->
+                            <div class="flex items-center justify-center space-x-4 mb-6">
+                                <button id="prev-btn" class="control-btn w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600" onclick="previousTrack()">
+                                    <i class="fas fa-step-backward"></i>
+                                </button>
+                                
+                                <button id="play-btn" class="control-btn w-16 h-16 bg-pink-600 hover:bg-pink-700 rounded-full flex items-center justify-center text-white shadow-lg" onclick="togglePlayback()">
+                                    <i class="fas fa-play text-xl"></i>
+                                </button>
+                                
+                                <button id="next-btn" class="control-btn w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600" onclick="nextTrack()">
+                                    <i class="fas fa-step-forward"></i>
+                                </button>
+                            </div>
+
+                            <!-- Volume Control -->
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-volume-down text-gray-500 w-4"></i>
+                                <input type="range" id="volume-slider" class="volume-slider flex-1" min="0" max="100" value="50">
+                                <i class="fas fa-volume-up text-gray-500 w-4"></i>
+                                <span id="volume-value" class="text-sm text-gray-500 w-8">50%</span>
+                            </div>
                         </div>
-                        <div class="w-3 h-3 bg-green-500 rounded-full status-indicator"></div>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Shuffle</p>
-                            <p class="text-xs text-gray-600">Random track order</p>
+
+                    <!-- Playlist Management -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-list mr-2"></i><?php echo $lang->get('playlist_management'); ?>
+                            </h2>
                         </div>
-                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div class="card-body">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Create Playlist -->
+                                <div class="bg-pink-50 rounded-lg p-6">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-3">
+                                        <i class="fas fa-plus mr-2 text-pink-600"></i><?php echo $lang->get('create_playlist'); ?>
+                                    </h3>
+                                    <p class="text-gray-600 mb-4">
+                                        <?php echo $lang->getCurrentLanguage() === 'de' 
+                                            ? 'Erstellen Sie eine neue Playlist basierend auf Ihren Top-Tracks'
+                                            : 'Create a new playlist based on your top tracks'; ?>
+                                    </p>
+                                    <button class="btn btn-success w-full" onclick="createPlaylist()">
+                                        <i class="fas fa-magic mr-2"></i><?php echo $lang->get('generate_playlist'); ?>
+                                    </button>
+                                </div>
+
+                                <!-- Import Playlist -->
+                                <div class="bg-blue-50 rounded-lg p-6">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-3">
+                                        <i class="fas fa-download mr-2 text-blue-600"></i><?php echo $lang->get('import_playlist'); ?>
+                                    </h3>
+                                    <p class="text-gray-600 mb-4">
+                                        <?php echo $lang->getCurrentLanguage() === 'de' 
+                                            ? 'Importieren Sie eine bestehende Playlist von Apple Music'
+                                            : 'Import an existing playlist from Apple Music'; ?>
+                                    </p>
+                                    <button class="btn btn-primary w-full" onclick="importPlaylist()">
+                                        <i class="fas fa-link mr-2"></i><?php echo $lang->get('import'); ?>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Repeat</p>
-                            <p class="text-xs text-gray-600">Loop all tracks</p>
+                </div>
+
+                <!-- Sidebar -->
+                <div>
+                    <!-- User Settings -->
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-cog mr-2"></i><?php echo $lang->get('settings'); ?>
+                            </h2>
                         </div>
-                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div class="card-body">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="form-label"><?php echo $lang->get('time_range'); ?></label>
+                                    <select id="time-range" class="form-input">
+                                        <option value="short_term"><?php echo $lang->get('last_4_weeks'); ?></option>
+                                        <option value="medium_term" selected><?php echo $lang->get('last_6_months'); ?></option>
+                                        <option value="long_term"><?php echo $lang->get('all_time'); ?></option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="form-label"><?php echo $lang->get('active_days'); ?></label>
+                                    <div class="space-y-2">
+                                        <?php
+                                        $days = [
+                                            '1' => $lang->get('monday'),
+                                            '2' => $lang->get('tuesday'),
+                                            '3' => $lang->get('wednesday'),
+                                            '4' => $lang->get('thursday'),
+                                            '5' => $lang->get('friday'),
+                                            '6' => $lang->get('saturday'),
+                                            '7' => $lang->get('sunday')
+                                        ];
+                                        foreach ($days as $day_num => $day_name):
+                                        ?>
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="active_days[]" value="<?php echo $day_num; ?>" 
+                                                   class="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                                                   <?php echo in_array($day_num, [1,2,3,4,5]) ? 'checked' : ''; ?>>
+                                            <span class="ml-2 text-sm text-gray-700"><?php echo $day_name; ?></span>
+                                        </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary w-full" onclick="saveSettings()">
+                                    <i class="fas fa-save mr-2"></i><?php echo $lang->get('save_settings'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-bolt mr-2"></i><?php echo $lang->get('quick_actions'); ?>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="space-y-3">
+                                <button class="btn btn-secondary w-full" onclick="openAppleMusic()">
+                                    <i class="fab fa-apple mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Apple Music öffnen' : 'Open Apple Music'; ?>
+                                </button>
+                                <button class="btn btn-secondary w-full" onclick="refreshPlaylists()">
+                                    <i class="fas fa-sync mr-2"></i><?php echo $lang->get('refresh_playlists'); ?>
+                                </button>
+                                <a href="player.php" class="btn btn-outline w-full">
+                                    <i class="fas fa-arrow-left mr-2"></i><?php echo $lang->get('back_to_player'); ?>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </main>
+        <?php endif; ?>
     </div>
 
-    <!-- Modern JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.3.11/dist/alpine.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <?php include 'components/footer.php'; ?>
+
+    <!-- JavaScript -->
+    <script src="assets/js/main.js"></script>
     
     <script>
-        // Sidebar toggle functionality
-        document.getElementById('sidebar-toggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('main-content');
-            
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('expanded');
-        });
-
-        // Apple Music logout function
-        function Apple_Logout() {
-            if (window.MusicKit && MusicKit.getInstance()) {
-                MusicKit.getInstance().unauthorize();
-            }
-            setTimeout(() => {window.location.href = "<?php echo $_SESSION['url']; ?>"; }, 3000);
-        }
-
-        document.getElementById('apple-logout').addEventListener('click', Apple_Logout);
-
-        <?php if(isset($_SESSION['apple_playlist_id']) && $_SESSION['apple_playlist_id']): ?>
-        // Apple Music Integration
-        let music = null;
-        let isPlaying = false;
-        let playUntil = new Date();
-        let pauseUntil = new Date();
-
-        document.addEventListener('musickitloaded', async function () {
-            try {
-                await MusicKit.configure({
-                    developerToken: '<?php echo $applemusic->jwtToken; ?>',
-                    app: {
-                        name: 'Playlist-Manager',
-                        build: '2023.06.07',
-                    },
-                });
-                
-                music = MusicKit.getInstance();
-                await music.authorize();
-                
-                // Initialize player
-                initializePlayer();
-                
-            } catch (err) {
-                console.log('Error in configuring Musickit!');
-                console.log(err);
-                document.getElementById('player-status').textContent = 'Configuration Error';
-            }
-        });
-
-        function initializePlayer() {
-            const playerContainer = document.getElementById('apple-music-player');
-            playerContainer.innerHTML = `
-                <div class="w-full h-full flex items-center justify-center">
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fab fa-apple text-pink-600 text-2xl"></i>
-                        </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Apple Music Ready</h3>
-                        <p class="text-gray-600 mb-4">Playlist: <?php echo htmlspecialchars($_SESSION['apple_playlist_id']); ?></p>
-                        <button id="play-playlist" class="apple-pink hover:bg-pink-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-play mr-2"></i>Start Playlist
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('play-playlist').addEventListener('click', function() {
-                startPlaylist();
+    let playbackStatus = null;
+    let isPlaying = false;
+    let currentPlaylist = '';
+    let updateInterval = null;
+    
+    // Initialize player
+    document.addEventListener('DOMContentLoaded', function() {
+        initializePlayer();
+        setupEventListeners();
+    });
+    
+    function initializePlayer() {
+        // Load initial status
+        updatePlaybackStatus();
+        
+        // Start periodic updates
+        updateInterval = setInterval(updatePlaybackStatus, 2000);
+    }
+    
+    function setupEventListeners() {
+        // Volume slider
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeValue = document.getElementById('volume-value');
+        
+        if (volumeSlider && volumeValue) {
+            volumeSlider.addEventListener('input', function() {
+                const volume = this.value;
+                volumeValue.textContent = volume + '%';
+                setVolume(volume);
             });
-
-            document.getElementById('player-status').textContent = 'Ready';
         }
-
-        async function startPlaylist() {
-            try {
-                // Load the playlist
-                await music.setQueue({
-                    playlist: '<?php echo $_SESSION['apple_playlist_id']; ?>'
-                });
-                
-                // Start playing
-                await music.play();
+        
+        // Progress slider
+        const progressSlider = document.getElementById('progress-slider');
+        if (progressSlider) {
+            progressSlider.addEventListener('input', function() {
+                const progress = this.value;
+                document.getElementById('progress-bar').style.width = progress + '%';
+            });
+            
+            progressSlider.addEventListener('change', function() {
+                const position = (this.value / 100) * (playbackStatus?.duration || 0);
+                seek(position);
+            });
+        }
+    }
+    
+    // Connect Apple Music
+    function connectAppleMusic() {
+        // Apple Music uses MusicKit for authentication
+        // This would typically open the Apple Music authorization flow
+        alert('<?php echo $lang->getCurrentLanguage() === "de" ? "Apple Music Verbindung wird implementiert..." : "Apple Music connection being implemented..."; ?>');
+    }
+    
+    // Toggle playback (play/pause)
+    function togglePlayback() {
+        if (!currentPlaylist && !playbackStatus?.playing) {
+            alert('<?php echo $lang->get("please_select_playlist"); ?>');
+            return;
+        }
+        
+        if (isPlaying) {
+            stopPlayback();
+        } else {
+            startPlayback();
+        }
+    }
+    
+    // Start playback
+    function startPlayback() {
+        const playlistId = document.getElementById('playlist-select').value;
+        
+        if (!playlistId && !playbackStatus?.playing) {
+            alert('<?php echo $lang->get("please_select_playlist"); ?>');
+            return;
+        }
+        
+        showLoading();
+        
+        fetch('applemusic_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=start_playback&playlist_id=${playlistId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
                 isPlaying = true;
-                
-                document.getElementById('player-status').textContent = 'Playing';
-                
-                // Start automation
-                startAutomation();
-                
-            } catch (error) {
-                console.error('Error starting playlist:', error);
-                document.getElementById('player-status').textContent = 'Error: ' + error.message;
+                updatePlaybackStatus();
+                updatePlayButton();
+            } else {
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
             }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error starting playback:', error);
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Stop playback
+    function stopPlayback() {
+        showLoading();
+        
+        fetch('applemusic_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=stop_playback'
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                isPlaying = false;
+                updatePlaybackStatus();
+                updatePlayButton();
+            } else {
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error stopping playback:', error);
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Next track
+    function nextTrack() {
+        fetch('applemusic_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=next_track'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updatePlaybackStatus();
+            } else {
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
+            }
+        })
+        .catch(error => {
+            console.error('Error skipping track:', error);
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Previous track
+    function previousTrack() {
+        fetch('applemusic_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=previous_track'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updatePlaybackStatus();
+            } else {
+                showError(data.message || '<?php echo $lang->get("playback_error"); ?>');
+            }
+        })
+        .catch(error => {
+            console.error('Error going to previous track:', error);
+            showError('<?php echo $lang->get("playback_error"); ?>');
+        });
+    }
+    
+    // Set volume
+    function setVolume(volume) {
+        fetch('applemusic_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=set_volume&volume=${volume}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.warn('Volume setting failed:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error setting volume:', error);
+        });
+    }
+    
+    // Seek to position
+    function seek(position) {
+        fetch('applemusic_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=seek&position=${position}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.warn('Seek failed:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error seeking:', error);
+        });
+    }
+    
+    // Update playback status
+    function updatePlaybackStatus() {
+        fetch('applemusic_play.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=get_status'
+        })
+        .then(response => response.json())
+        .then(data => {
+            playbackStatus = data;
+            updateTrackInfo();
+            updatePlayButton();
+        })
+        .catch(error => {
+            console.error('Error updating status:', error);
+        });
+    }
+    
+    // Update track information display
+    function updateTrackInfo() {
+        const currentTrack = document.getElementById('current-track');
+        const trackTitle = document.getElementById('track-title');
+        const trackArtist = document.getElementById('track-artist');
+        const trackAlbum = document.getElementById('track-album');
+        const trackArtwork = document.getElementById('track-artwork');
+        const trackDuration = document.getElementById('track-duration');
+        const playbackStatusText = document.getElementById('playback-status');
+        const progressBar = document.getElementById('progress-bar');
+        const progressSlider = document.getElementById('progress-slider');
+        const currentTime = document.getElementById('current-time');
+        const totalTime = document.getElementById('total-time');
+        
+        if (playbackStatus && playbackStatus.success && playbackStatus.playing) {
+            currentTrack.style.display = 'block';
+            
+            // Update track info
+            trackTitle.textContent = playbackStatus.track || 'Unknown Track';
+            trackArtist.textContent = playbackStatus.artist || 'Unknown Artist';
+            trackAlbum.textContent = playbackStatus.album || 'Unknown Album';
+            
+            // Update artwork
+            if (playbackStatus.artwork) {
+                trackArtwork.src = playbackStatus.artwork;
+                trackArtwork.style.display = 'block';
+            } else {
+                trackArtwork.style.display = 'none';
+            }
+            
+            // Update progress
+            const progress = playbackStatus.progress || 0;
+            const duration = playbackStatus.duration || 0;
+            const progressPercent = duration > 0 ? (progress / duration) * 100 : 0;
+            
+            progressBar.style.width = progressPercent + '%';
+            progressSlider.value = progressPercent;
+            
+            // Update time displays
+            currentTime.textContent = formatTime(progress);
+            totalTime.textContent = formatTime(duration);
+            trackDuration.textContent = `${formatTime(progress)} / ${formatTime(duration)}`;
+            
+            // Update status
+            playbackStatusText.textContent = 'Playing';
+            isPlaying = true;
+        } else {
+            currentTrack.style.display = 'none';
+            isPlaying = false;
         }
-
-        function startAutomation() {
-            setInterval(function() {
-                const now = new Date();
-                const currentDay = now.getDay();
-                const currentHour = now.getHours();
-                const currentMinute = now.getMinutes();
-                
-                const fromTime = '<?php echo $_SESSION['daytime_from']; ?>'.split(':');
-                const toTime = '<?php echo $_SESSION['daytime_to']; ?>'.split(':');
-                const fromHour = parseInt(fromTime[0]);
-                const fromMinute = parseInt(fromTime[1]);
-                const toHour = parseInt(toTime[0]);
-                const toMinute = parseInt(toTime[1]);
-                
-                const currentTime = currentHour * 60 + currentMinute;
-                const fromTimeMinutes = fromHour * 60 + fromMinute;
-                const toTimeMinutes = toHour * 60 + toMinute;
-                
-                const activeDays = '<?php echo $_SESSION['days']; ?>'.split(', ');
-                const isActiveDay = activeDays.includes(currentDay.toString());
-                const isActiveTime = currentTime >= fromTimeMinutes && currentTime <= toTimeMinutes;
-                
-                if (isActiveDay && isActiveTime) {
-                    // Pause before desired time
-                    if (currentTime < fromTimeMinutes && isPlaying) {
-                        music.pause();
-                        isPlaying = false;
-                        document.getElementById('player-status').textContent = 'Paused (before time)';
-                    }
-                    
-                    // Play with algorithm
-                    if (!isPlaying && currentTime >= fromTimeMinutes && currentTime <= toTimeMinutes && now > pauseUntil) {
-                        const playDuration = Math.floor(Math.random() * 600) + 61;
-                        playUntil = new Date(now.getTime() + playDuration * 1000);
-                        
-                        music.play();
-                        isPlaying = true;
-                        document.getElementById('player-status').textContent = `Playing (${playDuration}s)`;
-                        console.log('play for ' + playDuration + ' seconds');
-                    }
-                    
-                    // Pause with algorithm
-                    if (isPlaying && currentTime >= fromTimeMinutes && currentTime <= toTimeMinutes && now > playUntil) {
-                        const pauseDuration = Math.floor(Math.random() * 600) + 61;
-                        pauseUntil = new Date(now.getTime() + pauseDuration * 1000);
-                        
-                        music.pause();
-                        isPlaying = false;
-                        document.getElementById('player-status').textContent = `Paused (${pauseDuration}s)`;
-                        console.log('pause for ' + pauseDuration + ' seconds');
-                    }
-                    
-                    // Pause after desired time
-                    if (currentTime > toTimeMinutes && isPlaying) {
-                        music.pause();
-                        isPlaying = false;
-                        document.getElementById('player-status').textContent = 'Paused (after time)';
-                    }
-                    
-                    // Log statistics during regular play time
-                    $.ajax({
-                        method: "POST",
-                        url: "script/log_applemusic.php",
-                        data: { }
-                    })
-                    .done(function(response) {
-                        console.log('Apple Music statistics logged');
-                    })
-                    .fail(function(xhr, status, error) {
-                        console.log('Failed to log Apple Music statistics');
-                    });
-                } else {
-                    // Outside active time, pause if playing
-                    if (isPlaying) {
-                        music.pause();
-                        isPlaying = false;
-                        document.getElementById('player-status').textContent = 'Paused (outside schedule)';
-                    }
-                }
-            }, 5000);
+    }
+    
+    // Update play button
+    function updatePlayButton() {
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = playBtn.querySelector('i');
+        
+        if (isPlaying) {
+            playIcon.className = 'fas fa-pause text-xl';
+        } else {
+            playIcon.className = 'fas fa-play text-xl';
         }
-        <?php endif; ?>
+    }
+    
+    // Format time in MM:SS
+    function formatTime(ms) {
+        if (!ms) return '0:00';
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Show loading state
+    function showLoading() {
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = playBtn.querySelector('i');
+        playIcon.className = 'fas fa-spinner loading-spinner text-xl';
+        playBtn.disabled = true;
+    }
+    
+    // Hide loading state
+    function hideLoading() {
+        const playBtn = document.getElementById('play-btn');
+        playBtn.disabled = false;
+        updatePlayButton();
+    }
+    
+    // Show error message
+    function showError(message) {
+        // Create temporary error alert
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-error mb-6 animate-fade-in';
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i>
+            <span>${message}</span>
+        `;
+        
+        const container = document.querySelector('.container');
+        container.insertBefore(alert, container.firstChild);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+    
+    // Create playlist
+    function createPlaylist() {
+        alert('<?php echo $lang->get("create_playlist_feature"); ?>');
+    }
+    
+    // Import playlist
+    function importPlaylist() {
+        alert('<?php echo $lang->get("import_playlist_feature"); ?>');
+    }
+    
+    // Open Apple Music
+    function openAppleMusic() {
+        window.open('https://music.apple.com', '_blank');
+    }
+    
+    // Refresh playlists
+    function refreshPlaylists() {
+        location.reload();
+    }
+    
+    // Save settings
+    function saveSettings() {
+        const timeRange = document.getElementById('time-range').value;
+        const activeDays = Array.from(document.querySelectorAll('input[name="active_days[]"]:checked'))
+                                .map(cb => cb.value);
+        
+        // Save settings logic here
+        alert('<?php echo $lang->get("settings_saved"); ?>');
+    }
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (updateInterval) {
+            clearInterval(updateInterval);
+        }
+    });
     </script>
 </body>
 </html>
