@@ -365,60 +365,70 @@ $success = $success ?? $_GET['success'] ?? '';
                             <!-- Platform API Credentials Section -->
                             <div class="mb-6">
                                 <h3 class="text-lg font-semibold text-gray-900 mb-2">Platform API Credentials</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <?php
-                                    $platform_keys = [
-                                        // Spotify
-                                        'spotify_client_id' => 'Spotify Client ID',
-                                        'spotify_client_secret' => 'Spotify Client Secret',
-                                        'spotify_redirect_uri' => 'Spotify Redirect URI',
-                                        // Apple Music
-                                        'apple_music_team_id' => 'Apple Music Team ID',
-                                        'apple_music_key_id' => 'Apple Music Key ID',
-                                        'apple_music_private_key_path' => 'Apple Music Private Key Path',
-                                        // YouTube
-                                        'youtube_client_id' => 'YouTube Client ID',
-                                        'youtube_client_secret' => 'YouTube Client Secret',
-                                        'youtube_redirect_uri' => 'YouTube Redirect URI',
-                                        // Amazon (future)
-                                        'amazon_client_id' => 'Amazon Client ID',
-                                        'amazon_client_secret' => 'Amazon Client Secret',
-                                        'amazon_redirect_uri' => 'Amazon Redirect URI',
-                                    ];
-                                    $help_texts = [
-                                        'spotify_client_id' => 'Find in your Spotify Developer Dashboard.',
-                                        'spotify_client_secret' => 'Find in your Spotify Developer Dashboard.',
-                                        'spotify_redirect_uri' => 'Should match the redirect URI set in your Spotify app.',
-                                        'apple_music_team_id' => 'Apple Developer Team ID.',
-                                        'apple_music_key_id' => 'Apple Music Key ID for MusicKit.',
-                                        'apple_music_private_key_path' => 'Path to your Apple Music private key (.p8 file).',
-                                        'youtube_client_id' => 'Google Cloud OAuth Client ID.',
-                                        'youtube_client_secret' => 'Google Cloud OAuth Client Secret.',
-                                        'youtube_redirect_uri' => 'Should match the redirect URI set in your Google Cloud app.',
-                                        'amazon_client_id' => 'Amazon Developer Client ID.',
-                                        'amazon_client_secret' => 'Amazon Developer Client Secret.',
-                                        'amazon_redirect_uri' => 'Should match the redirect URI set in your Amazon app.',
-                                    ];
-                                    $existing_keys = array_column($systemSettings, 'setting_key');
-                                    foreach ($platform_keys as $key => $label):
-                                        $setting = null;
-                                        foreach ($systemSettings as $s) {
-                                            if ($s['setting_key'] === $key) { $setting = $s; break; }
-                                        }
-                                        $value = $setting['setting_value'] ?? '';
-                                        $desc = $setting['description'] ?? $help_texts[$key];
-                                    ?>
-                                    <div class="form-group">
-                                        <label for="<?php echo $key; ?>" class="form-label"><?php echo $label; ?></label>
-                                        <div class="flex space-x-2">
-                                            <input type="text" id="<?php echo $key; ?>" name="setting_value" class="form-input flex-1" value="<?php echo htmlspecialchars($value); ?>">
-                                            <input type="hidden" name="setting_key" value="<?php echo $key; ?>">
-                                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i></button>
+                                <?php
+                                $platforms = [
+                                    'spotify' => [
+                                        'label' => 'Spotify',
+                                        'fields' => [
+                                            'spotify_client_id' => 'Client ID',
+                                            'spotify_client_secret' => 'Client Secret',
+                                        ],
+                                        'redirect_uri' => 'spotify_redirect_uri',
+                                    ],
+                                    'apple_music' => [
+                                        'label' => 'Apple Music',
+                                        'fields' => [
+                                            'apple_music_team_id' => 'Team ID',
+                                            'apple_music_key_id' => 'Key ID',
+                                            'apple_music_private_key_path' => 'Private Key Path',
+                                        ],
+                                        'redirect_uri' => null, // Apple Music uses MusicKit JS, not a redirect URI
+                                    ],
+                                    'youtube' => [
+                                        'label' => 'YouTube Music',
+                                        'fields' => [
+                                            'youtube_client_id' => 'Client ID',
+                                            'youtube_client_secret' => 'Client Secret',
+                                        ],
+                                        'redirect_uri' => 'youtube_redirect_uri',
+                                    ],
+                                    'amazon' => [
+                                        'label' => 'Amazon Music',
+                                        'fields' => [
+                                            'amazon_client_id' => 'Client ID',
+                                            'amazon_client_secret' => 'Client Secret',
+                                        ],
+                                        'redirect_uri' => 'amazon_redirect_uri',
+                                    ],
+                                ];
+                                $systemSettingsAssoc = [];
+                                foreach ($systemSettings as $setting) {
+                                    $systemSettingsAssoc[$setting['setting_key']] = $setting['setting_value'];
+                                }
+                                foreach ($platforms as $platformKey => $platform):
+                                ?>
+                                <form method="POST" class="mb-8 bg-white rounded-lg shadow p-4 space-y-4">
+                                    <input type="hidden" name="action" value="update_system_setting">
+                                    <h4 class="text-md font-semibold text-gray-800 mb-2"><?php echo $platform['label']; ?></h4>
+                                    <?php foreach ($platform['fields'] as $key => $label): ?>
+                                        <div class="form-group">
+                                            <label for="<?php echo $key; ?>" class="form-label"><?php echo $label; ?></label>
+                                            <input type="text" id="<?php echo $key; ?>" name="setting_value[<?php echo $key; ?>]" class="form-input w-full" value="<?php echo htmlspecialchars($systemSettingsAssoc[$key] ?? ''); ?>">
                                         </div>
-                                        <p class="form-help"><?php echo htmlspecialchars($desc); ?></p>
-                                    </div>
                                     <?php endforeach; ?>
-                                </div>
+                                    <?php if ($platform['redirect_uri']): ?>
+                                        <div class="form-group">
+                                            <label class="form-label">Redirect URI</label>
+                                            <div class="flex space-x-2">
+                                                <input type="text" class="form-input w-full bg-gray-100" value="<?php echo htmlspecialchars($systemSettingsAssoc[$platform['redirect_uri']] ?? ''); ?>" readonly id="<?php echo $platform['redirect_uri']; ?>-readonly">
+                                                <button type="button" class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('<?php echo $platform['redirect_uri']; ?>-readonly').value)"><i class="fas fa-copy"></i> Copy</button>
+                                            </div>
+                                            <p class="form-help">Paste this URI into your <?php echo $platform['label']; ?> developer dashboard. This value is generated by the system and cannot be changed.</p>
+                                        </div>
+                                    <?php endif; ?>
+                                    <button type="submit" class="btn btn-primary mt-2"><i class="fas fa-save"></i> Save <?php echo $platform['label']; ?> Credentials</button>
+                                </form>
+                                <?php endforeach; ?>
                             </div>
                             <!-- End Platform API Credentials Section -->
 
