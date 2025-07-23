@@ -18,6 +18,7 @@ $currentUser = $auth->getCurrentUser();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $userId = (int)($_POST['user_id'] ?? 0);
+    $tabAfter = '';
     
     switch ($action) {
         case 'update_user_status':
@@ -88,7 +89,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = $lang->get('update_error');
                 }
             }
+            $tabAfter = 'settings';
             break;
+    }
+    // After saving system settings, redirect to ?tab=settings for better UX
+    if ($tabAfter) {
+        header('Location: admin.php?tab=' . $tabAfter);
+        exit;
     }
 }
 
@@ -570,19 +577,25 @@ $success = $success ?? $_GET['success'] ?? '';
     
     <script>
     // Tab functionality
+    function activateTab(tabName) {
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+        document.querySelector('.tab-button[data-tab="' + tabName + '"]').classList.add('active');
+        document.getElementById(tabName).classList.remove('hidden');
+    }
     document.querySelectorAll('.tab-button').forEach(button => {
         button.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
-            
-            // Update active tab button
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Update active tab panel
-            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
-            document.getElementById(tabName).classList.remove('hidden');
+            activateTab(this.dataset.tab);
         });
     });
+    // On page load, show settings tab if ?tab=settings is in the URL
+    (function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab && document.getElementById(tab)) {
+            activateTab(tab);
+        }
+    })();
     
     // Modal functionality
     function editUser(userId) {
