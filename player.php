@@ -540,11 +540,15 @@ $success = $_GET['success'] ?? '';
                         </div>
 
                         <!-- Playlist Selection -->
-                        <div class="mb-6" id="playlist-section" style="display: none;">
+                        <div id="playlist-section" class="mb-6" style="display: none;">
                             <label class="form-label"><?php echo $lang->get('select_playlist'); ?></label>
                             <select id="playlist-select" class="form-input">
                                 <option value=""><?php echo $lang->get('choose_playlist'); ?></option>
                             </select>
+                            <div id="playlist-empty-message" class="text-center text-gray-500 mt-4" style="display:none;"></div>
+                            <div id="connect-prompt" class="text-center mt-4" style="display:none;">
+                                <button id="connect-btn" class="btn btn-primary"></button>
+                            </div>
                         </div>
 
                         <!-- Player Controls -->
@@ -685,7 +689,13 @@ $success = $_GET['success'] ?? '';
         const platform = document.getElementById('platform-select').value;
         const playlistSection = document.getElementById('playlist-section');
         const playlistSelect = document.getElementById('playlist-select');
-        
+        const playlistEmptyMessage = document.getElementById('playlist-empty-message');
+        const connectPrompt = document.getElementById('connect-prompt');
+        const connectBtn = document.getElementById('connect-btn');
+
+        hideEmptyMessage();
+        hideConnectPrompt();
+
         if (!platform) {
             playlistSection.style.display = 'none';
             disableControls();
@@ -698,6 +708,8 @@ $success = $_GET['success'] ?? '';
             // Amazon Music - show manual control message
             playlistSection.style.display = 'block';
             playlistSelect.innerHTML = '<option value="">Amazon Music requires manual control</option>';
+            showEmptyMessage('Amazon Music requires manual control. Open in a new window.');
+            showConnectPrompt(platform);
             enableControls();
             return;
         }
@@ -715,7 +727,12 @@ $success = $_GET['success'] ?? '';
             playlistSection.style.display = 'block';
             playlistSelect.innerHTML = '<option value=""><?php echo $lang->get("choose_playlist"); ?></option>';
             
-            if (Array.isArray(data)) {
+            if (Array.isArray(data) && data.length === 0) {
+                showEmptyMessage('No playlists found. Connect your ' + platform.charAt(0).toUpperCase() + platform.slice(1) + ' account to view playlists.');
+                showConnectPrompt(platform);
+            } else {
+                hideEmptyMessage();
+                hideConnectPrompt();
                 data.forEach(playlist => {
                     const option = document.createElement('option');
                     option.value = playlist.id;
@@ -734,7 +751,8 @@ $success = $_GET['success'] ?? '';
         })
         .catch(error => {
             console.error('Error loading playlists:', error);
-            playlistSection.style.display = 'block';
+            showEmptyMessage('Error loading playlists.');
+            showConnectPrompt(platform);
             playlistSelect.innerHTML = '<option value="">Error loading playlists</option>';
         });
     }
@@ -1092,6 +1110,26 @@ $success = $_GET['success'] ?? '';
     // Import playlist
     function importPlaylist() {
         alert('<?php echo $lang->get("import_playlist_feature"); ?>');
+    }
+
+    function showConnectPrompt(platform) {
+        const prompt = document.getElementById('connect-prompt');
+        const btn = document.getElementById('connect-btn');
+        prompt.style.display = 'block';
+        btn.textContent = 'Connect ' + platform.charAt(0).toUpperCase() + platform.slice(1);
+        btn.onclick = function() {
+            window.location.href = platform + '_play.php';
+        };
+    }
+    function showEmptyMessage(msg) {
+        document.getElementById('playlist-empty-message').textContent = msg;
+        document.getElementById('playlist-empty-message').style.display = 'block';
+    }
+    function hideEmptyMessage() {
+        document.getElementById('playlist-empty-message').style.display = 'none';
+    }
+    function hideConnectPrompt() {
+        document.getElementById('connect-prompt').style.display = 'none';
     }
     
     // Cleanup on page unload

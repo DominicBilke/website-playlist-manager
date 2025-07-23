@@ -6,6 +6,8 @@
 
 // Autoload will be handled by the main initialization script
 
+require_once __DIR__ . '/vendor/autoload.php';
+
 class PlatformManager {
     private $pdo;
     private $lang;
@@ -296,7 +298,9 @@ class SpotifyPlatform extends BasePlatform {
     
     public function getPlaylists() {
         if (!$this->connected) {
-            return [];
+            return [
+                ['id' => '', 'name' => 'Not connected. Please connect your account.', 'tracks' => 0]
+            ];
         }
         
         try {
@@ -319,7 +323,7 @@ class SpotifyPlatform extends BasePlatform {
     
     public function startPlayback($playlist_id = null) {
         if (!$this->connected) {
-            return ['success' => false, 'message' => 'Not connected'];
+            return ['success' => false, 'message' => 'Not connected. Please connect your account.'];
         }
         
         try {
@@ -518,7 +522,9 @@ class AppleMusicPlatform extends BasePlatform {
     
     public function getPlaylists() {
         if (!$this->connected) {
-            return [];
+            return [
+                ['id' => '', 'name' => 'Amazon Music requires manual control. Open in a new window.', 'tracks' => 0]
+            ];
         }
         
         try {
@@ -542,7 +548,7 @@ class AppleMusicPlatform extends BasePlatform {
     
     public function startPlayback($playlist_id = null) {
         if (!$this->connected) {
-            return ['success' => false, 'message' => 'Not connected to Apple Music'];
+            return ['success' => false, 'message' => 'Not connected. Please connect your account.'];
         }
         
         try {
@@ -727,7 +733,9 @@ class YouTubePlatform extends BasePlatform {
     
     public function getPlaylists() {
         if (!$this->connected) {
-            return [];
+            return [
+                ['id' => '', 'name' => 'Amazon Music requires manual control. Open in a new window.', 'tracks' => 0]
+            ];
         }
         
         try {
@@ -754,7 +762,7 @@ class YouTubePlatform extends BasePlatform {
     
     public function startPlayback($playlist_id = null) {
         if (!$this->connected) {
-            return ['success' => false, 'message' => 'Not connected to YouTube Music'];
+            return ['success' => false, 'message' => 'Not connected. Please connect your account.'];
         }
         
         try {
@@ -924,7 +932,9 @@ class AmazonPlatform extends BasePlatform {
     
     public function getPlaylists() {
         if (!$this->connected) {
-            return [];
+            return [
+                ['id' => '', 'name' => 'Amazon Music requires manual control. Open in a new window.', 'tracks' => 0]
+            ];
         }
         
         try {
@@ -939,10 +949,7 @@ class AmazonPlatform extends BasePlatform {
     
     public function startPlayback($playlist_id = null) {
         if (!$this->connected) {
-            return [
-                'success' => false, 
-                'message' => 'Amazon Music requires manual control. Please open Amazon Music in a new window.'
-            ];
+            return ['success' => false, 'message' => 'Amazon Music requires manual control. Open in a new window.'];
         }
         
         try {
