@@ -56,19 +56,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
             
         case 'update_system_setting':
-            $settingKey = $_POST['setting_key'] ?? '';
-            $settingValue = $_POST['setting_value'] ?? '';
-            
-            try {
-                $stmt = $pdo->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
-                $stmt->execute([$settingValue, $settingKey]);
-                
-                // Log admin action
-                $auth->logAdminAction($currentUser['id'], 'update_setting', 'system', 0, "Updated setting: $settingKey = $settingValue");
-                
-                $success = $lang->get('setting_updated_successfully');
-            } catch (PDOException $e) {
-                $error = $lang->get('update_error');
+            // Support saving multiple settings at once (array input)
+            if (is_array($_POST['setting_value'])) {
+                $successCount = 0;
+                $errorCount = 0;
+                foreach ($_POST['setting_value'] as $settingKey => $settingValue) {
+                    try {
+                        $stmt = $pdo->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
+                        $stmt->execute([$settingValue, $settingKey]);
+                        $auth->logAdminAction($currentUser['id'], 'update_setting', 'system', 0, "Updated setting: $settingKey = $settingValue");
+                        $successCount++;
+                    } catch (PDOException $e) {
+                        $errorCount++;
+                    }
+                }
+                if ($successCount > 0) {
+                    $success = $lang->get('setting_updated_successfully');
+                }
+                if ($errorCount > 0) {
+                    $error = $lang->get('update_error');
+                }
+            } else {
+                $settingKey = $_POST['setting_key'] ?? '';
+                $settingValue = $_POST['setting_value'] ?? '';
+                try {
+                    $stmt = $pdo->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
+                    $stmt->execute([$settingValue, $settingKey]);
+                    $auth->logAdminAction($currentUser['id'], 'update_setting', 'system', 0, "Updated setting: $settingKey = $settingValue");
+                    $success = $lang->get('setting_updated_successfully');
+                } catch (PDOException $e) {
+                    $error = $lang->get('update_error');
+                }
             }
             break;
     }
