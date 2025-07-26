@@ -4,8 +4,8 @@
  * Common functions for language handling across the application
  */
 
-// Helper function to build language URLs
-function buildLanguageUrl($language) {
+// Helper function to build language URLs (using query parameters)
+function buildLanguageUrlQuery($language) {
     $currentUrl = $_SERVER['REQUEST_URI'];
     $parsedUrl = parse_url($currentUrl);
     $path = $parsedUrl['path'];

@@ -7,7 +7,6 @@ ini_set('display_errors', 1);
 // Include necessary files
 require_once 'script/inc_start.php';
 require_once 'script/languages.php';
-require_once 'script/language_utils.php';
 
 // Initialize language manager
 $lang = new LanguageManager();

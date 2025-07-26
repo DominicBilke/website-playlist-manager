@@ -8,6 +8,7 @@ The music platform pages (spotify_play.php, applemusic_play.php, youtube_play.ph
 2. **Database Connection Problems**: Platform manager initialization was failing due to database connection issues
 3. **Error Handling**: No proper error handling or fallback mechanisms
 4. **Missing Error Display**: Errors were being suppressed, making debugging difficult
+5. **Function Name Conflicts**: `buildLanguageUrl()` function was declared in both `inc_start.php` and `language_utils.php`
 
 ## Fixes Applied
 
@@ -96,6 +97,11 @@ try {
 - **Added**: Error reporting enabled for development
 - **Benefit**: Easier troubleshooting and development
 
+### 6. Function Conflict Resolution
+- **Fixed**: Renamed duplicate `buildLanguageUrl()` function in `language_utils.php` to `buildLanguageUrlQuery()`
+- **Removed**: Unnecessary includes of `language_utils.php` from platform pages
+- **Benefit**: Eliminates fatal errors and allows both utility files to coexist
+
 ## Files Modified
 
 ### Core Platform Pages
@@ -104,8 +110,12 @@ try {
 3. **youtube_play.php** - Updated initialization and error handling
 4. **amazon_play.php** - Updated initialization and error handling
 
+### Utility Files
+1. **script/language_utils.php** - Fixed function name conflict with `buildLanguageUrl()`
+
 ### New Files
 1. **test_platforms.php** - Test page for debugging and verification
+2. **test_function_conflict.php** - Test file to verify function conflict resolution
 
 ## Key Improvements
 
