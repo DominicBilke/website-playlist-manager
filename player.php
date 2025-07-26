@@ -458,6 +458,59 @@ $success = $_GET['success'] ?? '';
             </div>
         </div>
 
+        <!-- Iframe Players Section -->
+        <div class="mt-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-play-circle mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Eingebettete Player' : 'Embedded Players'; ?>
+                    </h2>
+                    <p class="text-gray-600 mt-1">
+                        <?php echo $lang->getCurrentLanguage() === 'de' 
+                            ? 'Direkte Player für alle verbundenen Plattformen'
+                            : 'Direct players for all connected platforms'; ?>
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <?php
+                        require_once 'components/iframe_player.php';
+                        
+                        // Show iframe players for connected platforms
+                        $connectedPlatforms = array_filter($platformStatuses, function($status) {
+                            return $status['connected'];
+                        });
+                        
+                        if (empty($connectedPlatforms)): ?>
+                            <div class="col-span-full text-center py-8">
+                                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-music text-gray-400 text-2xl"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                                    <?php echo $lang->getCurrentLanguage() === 'de' ? 'Keine Player verfügbar' : 'No Players Available'; ?>
+                                </h3>
+                                <p class="text-gray-600 mb-4">
+                                    <?php echo $lang->getCurrentLanguage() === 'de' 
+                                        ? 'Verbinden Sie eine Plattform, um die eingebetteten Player zu sehen'
+                                        : 'Connect a platform to see embedded players'; ?>
+                                </p>
+                                <a href="spotify_play.php" class="btn btn-primary">
+                                    <i class="fab fa-spotify mr-2"></i><?php echo $lang->getCurrentLanguage() === 'de' ? 'Erste Plattform verbinden' : 'Connect First Platform'; ?>
+                                </a>
+                            </div>
+                        <?php else:
+                            foreach ($connectedPlatforms as $platform => $status):
+                                $iframePlayer = new IframePlayer($platform, $lang);
+                                echo '<div class="iframe-player-wrapper">';
+                                echo $iframePlayer->getPlayerControls();
+                                echo '</div>';
+                            endforeach;
+                        endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Quick Actions -->
         <div class="mt-8">
             <div class="card">
@@ -1140,5 +1193,15 @@ $success = $_GET['success'] ?? '';
         }
     });
     </script>
+
+    <?php
+    // Add iframe player scripts for connected platforms
+    if (!empty($connectedPlatforms)) {
+        foreach ($connectedPlatforms as $platform => $status) {
+            $iframePlayer = new IframePlayer($platform, $lang);
+            echo $iframePlayer->getPlayerScript();
+        }
+    }
+    ?>
 </body>
 </html> 

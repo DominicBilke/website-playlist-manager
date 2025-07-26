@@ -510,6 +510,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         </div>
                     </div>
 
+                    <!-- Iframe Player -->
+                    <?php
+                    require_once 'components/iframe_player.php';
+                    $iframePlayer = new IframePlayer('apple_music', $lang);
+                    echo $iframePlayer->getPlayerControls();
+                    ?>
+
                     <!-- Playlist Management -->
                     <div class="card">
                         <div class="card-header">
@@ -1020,5 +1027,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
     });
     </script>
+
+    <?php echo $iframePlayer->getPlayerScript(); ?>
 </body>
 </html>
