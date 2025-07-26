@@ -8,12 +8,12 @@
 date_default_timezone_set("Europe/Berlin");
 
 // Session configuration
-ini_set("session.gc_maxlifetime", 31536000);
-ini_set("session.cookie_lifetime", 0);
-ini_set("session.cookie_httponly", 1);
-ini_set("session.cookie_secure", isset($_SERVER['HTTPS']));
-ini_set("session.use_strict_mode", 1);
-ini_set("session.cookie_samesite", 'Strict');
+@ini_set("session.gc_maxlifetime", 31536000);
+@ini_set("session.cookie_lifetime", 0);
+@ini_set("session.cookie_httponly", 1);
+@ini_set("session.cookie_secure", isset($_SERVER['HTTPS']));
+@ini_set("session.use_strict_mode", 1);
+@ini_set("session.cookie_samesite", 'Strict');
 
 // Start session
 if (session_status() === PHP_SESSION_NONE) {
