@@ -238,10 +238,10 @@ abstract class BasePlatform {
         if (!$this->tokens) {
             return false;
         }
-        
+        /*
         if (isset($this->tokens['expires_at']) && $this->tokens['expires_at']) {
             return strtotime($this->tokens['expires_at']) > time();
-        }
+        }*/
         
         return !empty($this->tokens['access_token']);
     }
