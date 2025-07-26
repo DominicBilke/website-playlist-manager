@@ -1,16 +1,16 @@
 <?php
-require 'script/inc_start.php';
-require 'script/languages.php';
+// Use new include system
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', __DIR__);
+}
+require_once 'script/includes.php';
+
+// Initialize language manager and authentication
+$lang = init_app();
+$auth = init_auth();
 
 // Check if user is logged in
-if(!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
-if (!$pdo) {
-    echo '<div style="color:red;">Database connection failed. Please contact the administrator.</div>';
-    exit;
-}
+require_auth();
 
 // Handle connect/disconnect platform actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -57,9 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $days = $_POST['days'] ?? '';
         
         try {
-            $pdo = new PDO("mysql:host=localhost;dbname=playlist_manager", "username", "password");
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            
             $stmt = $pdo->prepare("UPDATE users SET daytime_from = ?, daytime_to = ?, days = ? WHERE id = ?");
             $stmt->execute([$daytime_from, $daytime_to, $days, $_SESSION['user_id']]);
             
@@ -86,9 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_message = $lang->getCurrentLanguage() === 'de' ? 'Passwort muss mindestens 6 Zeichen lang sein.' : 'Password must be at least 6 characters long.';
         } else {
             try {
-                $pdo = new PDO("mysql:host=localhost;dbname=playlist_manager", "username", "password");
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                
                 // Verify current password
                 $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
                 $stmt->execute([$_SESSION['user_id']]);

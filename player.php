@@ -1,20 +1,22 @@
 <?php
-require 'script/inc_start.php';
-require 'script/languages.php';
-require_once 'script/auth.php';
-require_once 'script/PlatformManager.php';
+// Use new include system
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', __DIR__);
+}
+require_once 'script/includes.php';
 
-// Initialize auth system
-$auth = new Auth($pdo, $lang);
+// Initialize language manager and authentication
+$lang = init_app();
+$auth = init_auth();
 
 // Require authentication
-$auth->requireAuth();
+require_auth();
 
 // Get current user
-$currentUser = $auth->getCurrentUser();
+$currentUser = get_current_user_info();
 
 // Initialize platform manager
-$platformManager = new PlatformManager($pdo, $lang, $currentUser['id']);
+$platformManager = init_platform_manager($currentUser['id']);
 
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {

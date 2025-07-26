@@ -1,7 +1,12 @@
 <?php
+// Use new include system
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', __DIR__);
+}
+require_once 'script/includes.php';
 
-require_once 'script/inc_start.php';
-require_once 'script/languages.php';
+// Initialize language manager
+$lang = init_app();
 
 ?>
 <!DOCTYPE html>

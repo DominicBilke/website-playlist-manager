@@ -1,19 +1,19 @@
 <?php
-require 'script/inc_start.php';
-require 'script/languages.php';
+// Use new include system
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', __DIR__);
+}
+require_once 'script/includes.php';
+
+// Initialize language manager and authentication
+$lang = init_app();
+$auth = init_auth();
 
 // Require admin access
-if(!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
-if (!$pdo) {
-    echo '<div style="color:red;">Database connection failed. Please contact the administrator.</div>';
-    exit;
-}
+require_admin();
 
 // Get current user
-$currentUser = $auth->getCurrentUser();
+$currentUser = get_current_user_info();
 
 // Handle admin actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

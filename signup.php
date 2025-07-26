@@ -1,6 +1,13 @@
 <?php
-require 'script/inc_start.php';
-require 'script/languages.php';
+// Use new include system
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', __DIR__);
+}
+require_once 'script/includes.php';
+
+// Initialize language manager and authentication
+$lang = init_app();
+$auth = init_auth();
 
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {

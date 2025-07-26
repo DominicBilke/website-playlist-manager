@@ -1,12 +1,19 @@
 <?php
-require 'script/inc_start.php';
-require 'script/languages.php';
+// Use new include system
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', __DIR__);
+}
+require_once 'script/includes.php';
+
+// Initialize language manager and authentication
+$lang = init_app();
+$auth = init_auth();
 
 // Require authentication
-$auth->requireAuth();
+require_auth();
 
 // Get current user
-$currentUser = $auth->getCurrentUser();
+$currentUser = get_current_user_info();
 
 // Get error/success messages
 $error = $_GET['error'] ?? '';

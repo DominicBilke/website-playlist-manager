@@ -1,7 +1,12 @@
 <?php
-require 'script/inc_start.php';
-require 'script/languages.php';
-require 'script/language_utils.php';
+// Use new include system
+if (!defined('APP_ROOT')) {
+    define('APP_ROOT', __DIR__);
+}
+require_once 'script/includes.php';
+
+// Initialize language manager
+$lang = init_app();
 
 // Handle password reset request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
