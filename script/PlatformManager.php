@@ -386,9 +386,9 @@ class SpotifyPlatform extends BasePlatform {
     
     public function authenticate($code = null) {
         // Spotify authentication logic
-        $client_id = '4078ed7dc1264188a9e83dfd459a94a0';
-        $client_secret = 'b9e4f66dbe5d4b659bdc635df002ed34';
-        $redirect_uri = 'https://playlist-manager.de/spotify_play.php';
+        $client_id = '';
+        $client_secret = '';
+        $redirect_uri = 'https://www2.playlist-manager.de/spotify_play.php';
         
         try {
             $this->session = new SpotifyWebAPI\Session($client_id, $client_secret, $redirect_uri);
@@ -485,9 +485,9 @@ class AppleMusicPlatform extends BasePlatform {
             // Initialize Apple Music API with JWT token
             $tokenGenerator = new PouleR\AppleMusicAPI\AppleMusicAPITokenGenerator();
             $this->jwtToken = $tokenGenerator->generateDeveloperToken(
-                'GCAHH74QFP',
-                'D8CPQWP5JR',
-                'https://playlist-manager.de/AuthKey_D8CPQWP5JR.p8'
+                '',
+                '',
+                'https://www2.playlist-manager.de/AuthKey.p8'
             );
             
             $curl = new \Symfony\Component\HttpClient\CurlHttpClient();
@@ -679,9 +679,9 @@ class YouTubePlatform extends BasePlatform {
         try {
             // Initialize YouTube Data API v3
             $this->client = new \Google_Client();
-            $this->client->setClientId('YOUR_YOUTUBE_CLIENT_ID');
-            $this->client->setClientSecret('YOUR_YOUTUBE_CLIENT_SECRET');
-            $this->client->setRedirectUri('https://playlist-manager.de/youtube_play.php');
+            $this->client->setClientId('');
+            $this->client->setClientSecret('');
+            $this->client->setRedirectUri('https://www2.playlist-manager.de/youtube_play.php');
             $this->client->setScopes([
                 'https://www.googleapis.com/auth/youtube.readonly',
                 'https://www.googleapis.com/auth/youtube.force-ssl'

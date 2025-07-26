@@ -1,5 +1,8 @@
 <?php
-require 'script/init.php';
+
+require_once 'script/inc_start.php';
+require_once 'script/languages.php';
+
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $lang->getCurrentLanguage(); ?>">
