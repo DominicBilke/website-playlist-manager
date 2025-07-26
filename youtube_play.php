@@ -1,30 +1,65 @@
 <?php
-require 'script/inc_start.php';
-require 'script/languages.php';
-require 'script/language_utils.php';
-require_once 'script/auth.php';
-require_once 'script/PlatformManager.php';
+// Basic initialization
+session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// Initialize auth system
-$auth = new Auth($pdo, $lang);
+// Include necessary files
+require_once 'script/inc_start.php';
+require_once 'script/languages.php';
+require_once 'script/language_utils.php';
 
-// Require authentication
-$auth->requireAuth();
+// Initialize language manager
+$lang = new LanguageManager();
 
-// Get current user
-$currentUser = $auth->getCurrentUser();
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
 
-// Initialize platform manager
-$platformManager = new PlatformManager($pdo, $lang, $currentUser['id']);
-$youtubePlatform = $platformManager->getPlatform('youtube');
+// Get current user info
+$currentUser = [
+    'id' => $_SESSION['user_id'],
+    'login' => $_SESSION['login'] ?? 'User',
+    'team' => $_SESSION['team'] ?? 'N/A'
+];
+
+// Initialize platform manager with error handling
+try {
+    require_once 'script/PlatformManager.php';
+    $platformManager = new PlatformManager($pdo, $lang, $currentUser['id']);
+    $youtubePlatform = $platformManager->getPlatform('youtube');
+    
+    if ($youtubePlatform) {
+        $status = $youtubePlatform->getStatus();
+        $playlists = $status['connected'] ? $youtubePlatform->getPlaylists() : [];
+    } else {
+        $status = ['connected' => false, 'message' => 'Platform not available'];
+        $playlists = [];
+    }
+} catch (Exception $e) {
+    error_log("Platform manager error: " . $e->getMessage());
+    $status = ['connected' => false, 'message' => 'Platform initialization failed'];
+    $playlists = [];
+}
 
 // Handle authentication callback
+$error_message = '';
+$success_message = '';
 if (isset($_GET['code'])) {
-    $result = $youtubePlatform->authenticate($_GET['code']);
-    if ($result['success']) {
-        $success_message = $lang->get('youtube_connected_successfully');
-    } else {
-        $error_message = $result['message'];
+    try {
+        if ($youtubePlatform) {
+            $result = $youtubePlatform->authenticate($_GET['code']);
+            if ($result['success']) {
+                $success_message = $lang->get('youtube_connected_successfully');
+                $status = $youtubePlatform->getStatus();
+            } else {
+                $error_message = $result['message'];
+            }
+        }
+    } catch (Exception $e) {
+        $error_message = 'Authentication failed: ' . $e->getMessage();
     }
 }
 
@@ -32,52 +67,53 @@ if (isset($_GET['code'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
     
-    $action = $_POST['action'];
-    $playlist_id = $_POST['playlist_id'] ?? null;
-    $track_uri = $_POST['track_uri'] ?? null;
-    
-    switch ($action) {
-        case 'start_playback':
-            $result = $youtubePlatform->startPlayback($playlist_id);
-            break;
-        case 'stop_playback':
-            $result = $youtubePlatform->stopPlayback();
-            break;
-        case 'get_status':
-            $result = $youtubePlatform->getPlaybackStatus();
-            break;
-        case 'get_playlists':
-            $result = $youtubePlatform->getPlaylists();
-            break;
-        case 'next_track':
-            $result = $youtubePlatform->nextTrack();
-            break;
-        case 'previous_track':
-            $result = $youtubePlatform->previousTrack();
-            break;
-        case 'set_volume':
-            $volume = $_POST['volume'] ?? 50;
-            $result = $youtubePlatform->setVolume($volume);
-            break;
-        case 'seek':
-            $position = $_POST['position'] ?? 0;
-            $result = $youtubePlatform->seek($position);
-            break;
-        default:
-            $result = ['success' => false, 'message' => 'Invalid action'];
+    try {
+        if (!$youtubePlatform) {
+            echo json_encode(['success' => false, 'message' => 'Platform not available']);
+            exit;
+        }
+        
+        $action = $_POST['action'];
+        $playlist_id = $_POST['playlist_id'] ?? null;
+        $track_uri = $_POST['track_uri'] ?? null;
+        
+        switch ($action) {
+            case 'start_playback':
+                $result = $youtubePlatform->startPlayback($playlist_id);
+                break;
+            case 'stop_playback':
+                $result = $youtubePlatform->stopPlayback();
+                break;
+            case 'get_status':
+                $result = $youtubePlatform->getPlaybackStatus();
+                break;
+            case 'get_playlists':
+                $result = $youtubePlatform->getPlaylists();
+                break;
+            case 'next_track':
+                $result = $youtubePlatform->nextTrack();
+                break;
+            case 'previous_track':
+                $result = $youtubePlatform->previousTrack();
+                break;
+            case 'set_volume':
+                $volume = $_POST['volume'] ?? 50;
+                $result = $youtubePlatform->setVolume($volume);
+                break;
+            case 'seek':
+                $position = $_POST['position'] ?? 0;
+                $result = $youtubePlatform->seek($position);
+                break;
+            default:
+                $result = ['success' => false, 'message' => 'Invalid action'];
+        }
+        
+        echo json_encode($result);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
-    
-    echo json_encode($result);
     exit;
 }
-
-// Get platform status
-$status = $youtubePlatform->getStatus();
-$playlists = $status['connected'] ? $youtubePlatform->getPlaylists() : [];
-
-// Get error/success messages
-$error_message = $error_message ?? $_GET['error'] ?? '';
-$success_message = $success_message ?? $_GET['success'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $lang->getCurrentLanguage(); ?>">
