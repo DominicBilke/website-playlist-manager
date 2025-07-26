@@ -1,34 +1,21 @@
 <?php
 // Basic initialization
-session_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+define('APP_ROOT', __DIR__);
+require_once 'script/includes.php';
 
-// Include necessary files
-require_once 'script/inc_start.php';
-require_once 'script/languages.php';
-
-// Initialize language manager
-$lang = new LanguageManager();
+// Initialize application
+$lang = init_app();
 
 // Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
-}
+require_auth();
 
 // Get current user info
-$currentUser = [
-    'id' => $_SESSION['user_id'],
-    'login' => $_SESSION['login'] ?? 'User',
-    'team' => $_SESSION['team'] ?? 'N/A'
-];
+$currentUser = get_current_user_info();
 
 // Initialize platform manager with error handling
 try {
-    require_once 'script/PlatformManager.php';
-    $platformManager = new PlatformManager($pdo, $lang, $currentUser['id']);
-    $amazonPlatform = $platformManager->getPlatform('amazon');
+    $platformManager = init_platform_manager($currentUser['id']);
+    $amazonPlatform = $platformManager ? $platformManager->getPlatform('amazon') : null;
     
     if ($amazonPlatform) {
         $status = $amazonPlatform->getStatus();

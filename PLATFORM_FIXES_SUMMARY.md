@@ -9,6 +9,9 @@ The music platform pages (spotify_play.php, applemusic_play.php, youtube_play.ph
 3. **Error Handling**: No proper error handling or fallback mechanisms
 4. **Missing Error Display**: Errors were being suppressed, making debugging difficult
 5. **Function Name Conflicts**: `buildLanguageUrl()` function was declared in both `inc_start.php` and `language_utils.php`
+6. **Inconsistent Include Patterns**: Mixed use of `require` and `require_once` across files
+7. **Redundant Includes**: Components including files already loaded by parent pages
+8. **Missing Error Handling**: No checks for missing files or include failures
 
 ## Fixes Applied
 
@@ -102,6 +105,12 @@ try {
 - **Removed**: Unnecessary includes of `language_utils.php` from platform pages
 - **Benefit**: Eliminates fatal errors and allows both utility files to coexist
 
+### 7. Include System Revamp
+- **Created**: Centralized include system (`script/includes.php`) with safe include functions
+- **Standardized**: All platform pages now use consistent initialization patterns
+- **Enhanced**: Components now check for existing includes before loading dependencies
+- **Benefit**: Prevents duplicate includes, reduces conflicts, and improves maintainability
+
 ## Files Modified
 
 ### Core Platform Pages
@@ -112,10 +121,17 @@ try {
 
 ### Utility Files
 1. **script/language_utils.php** - Fixed function name conflict with `buildLanguageUrl()`
+2. **script/includes.php** - New centralized include system
+
+### Components
+1. **components/header.php** - Updated to use new include system
+2. **components/footer.php** - Updated to use new include system
+3. **components/language_switcher.php** - Updated to use new include system
 
 ### New Files
 1. **test_platforms.php** - Test page for debugging and verification
 2. **test_function_conflict.php** - Test file to verify function conflict resolution
+3. **test_includes.php** - Test file for the new include system
 
 ## Key Improvements
 

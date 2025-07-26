@@ -1,6 +1,12 @@
 <?php
-require_once 'script/languages.php';
-require_once 'script/language_utils.php';
+// Ensure language manager is loaded
+if (!isset($lang)) {
+    if (!function_exists('init_app')) {
+        require_once 'script/includes.php';
+    }
+    $lang = init_app();
+    init_language_utils();
+}
 ?>
 <footer class="bg-white border-t border-gray-200 mt-auto">
     <div class="container">

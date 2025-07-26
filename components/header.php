@@ -1,8 +1,10 @@
 <?php
 // Ensure language manager is loaded
 if (!isset($lang)) {
-    require_once 'script/languages.php';
-    $lang = new LanguageManager();
+    if (!function_exists('init_app')) {
+        require_once 'script/includes.php';
+    }
+    $lang = init_app();
 }
 ?>
 

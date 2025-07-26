@@ -4,11 +4,12 @@
 
 // Ensure language manager is loaded
 if (!isset($lang)) {
-    require_once 'script/languages.php';
+    if (!function_exists('init_app')) {
+        require_once 'script/includes.php';
+    }
+    $lang = init_app();
+    init_language_utils();
 }
-
-// Include language utilities
-require_once 'script/language_utils.php';
 ?>
 
 <div class="relative">
