@@ -1,5 +1,6 @@
 <?php
-require 'script/init.php';
+require 'script/inc_start.php';
+require 'script/languages.php';
 
 // Require authentication
 $auth->requireAuth();

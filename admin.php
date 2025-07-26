@@ -1,5 +1,6 @@
 <?php
-require 'script/init.php';
+require 'script/inc_start.php';
+require 'script/languages.php';
 
 // Require admin access
 if(!isset($_SESSION['user_id'])) {
