@@ -34,6 +34,12 @@ class Auth {
      */
     public function login($username, $password) {
         try {
+            // Check if database connection is available
+            if (!$this->pdo) {
+                error_log("Database connection not available for login attempt");
+                return ['success' => false, 'message' => $this->lang->get('login_error')];
+            }
+            
             // Check if user exists and is active
             $stmt = $this->pdo->prepare("
                 SELECT id, login, password, email, team, office, role, status, login_counter 
@@ -84,6 +90,12 @@ class Auth {
      */
     public function register($data) {
         try {
+            // Check if database connection is available
+            if (!$this->pdo) {
+                error_log("Database connection not available for registration attempt");
+                return ['success' => false, 'message' => $this->lang->get('signup_error')];
+            }
+            
             // Check if registration is enabled
             if (!$this->isRegistrationEnabled()) {
                 return ['success' => false, 'message' => $this->lang->get('registration_disabled')];

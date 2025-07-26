@@ -90,6 +90,11 @@ function init_app() {
         $GLOBALS['lang'] = new LanguageManager();
     }
     
+    // Ensure database is initialized
+    if (!isset($GLOBALS['pdo'])) {
+        get_database();
+    }
+    
     return $GLOBALS['lang'];
 }
 
@@ -98,6 +103,11 @@ function init_app() {
  */
 function init_auth() {
     if (!isset($GLOBALS['auth'])) {
+        // Ensure database is initialized first
+        if (!isset($GLOBALS['pdo'])) {
+            get_database();
+        }
+        
         safe_include('script/auth.php');
         $GLOBALS['auth'] = new Auth($GLOBALS['pdo'], $GLOBALS['lang']);
     }
@@ -109,6 +119,11 @@ function init_auth() {
  */
 function init_platform_manager($user_id = null) {
     if (!isset($GLOBALS['platform_manager'])) {
+        // Ensure database is initialized first
+        if (!isset($GLOBALS['pdo'])) {
+            get_database();
+        }
+        
         safe_include('script/PlatformManager.php');
         $user_id = $user_id ?: ($_SESSION['user_id'] ?? null);
         if ($user_id) {
