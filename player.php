@@ -1,7 +1,6 @@
 <?php
 require 'script/inc_start.php';
 require 'script/languages.php';
-require 'script/language_utils.php';
 require_once 'script/auth.php';
 require_once 'script/PlatformManager.php';
 

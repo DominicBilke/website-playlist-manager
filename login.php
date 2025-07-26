@@ -1,5 +1,8 @@
 <?php
-require 'script/init.php';
+
+require_once 'script/inc_start.php';
+require_once 'script/languages.php';
+
 
 // Check if user is already logged in
 if (isset($_SESSION['user_id'])) {
