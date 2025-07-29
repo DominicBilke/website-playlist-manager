@@ -71,10 +71,10 @@ class PlatformManager {
      */
     public function getPlatformStatus($platform) {
         $platformInstance = $this->getPlatform($platform);
-        if (!$platformInstance) {
-            return ['connected' => false, 'message' => 'Platform not available'];
+        if ($platformInstance) {
+            return $platformInstance->getStatus();
         }
-        return $platformInstance->getStatus();
+        return ['connected' => false, 'message' => 'Platform not available'];
     }
     
     /**
@@ -86,6 +86,108 @@ class PlatformManager {
             $statuses[$platform] = $instance->getStatus();
         }
         return $statuses;
+    }
+    
+    /**
+     * Connect platform using OAuth
+     */
+    public function connectPlatform($platform) {
+        try {
+            // Initialize OAuth manager
+            require_once __DIR__ . '/OAuthManager.php';
+            $oauthManager = new OAuthManager($this->pdo, $this->lang);
+            
+            // Generate OAuth URL for platform connection
+            $authUrl = $oauthManager->getAuthUrl($platform);
+            
+            return [
+                'success' => true,
+                'auth_url' => $authUrl,
+                'message' => 'Redirecting to ' . ucfirst($platform) . ' for authentication'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to initiate ' . ucfirst($platform) . ' connection: ' . $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * Disconnect platform
+     */
+    public function disconnectPlatform($platform) {
+        try {
+            // Remove token from database
+            $stmt = $this->pdo->prepare("DELETE FROM api_tokens WHERE user_id = ? AND platform = ?");
+            $stmt->execute([$this->user_id, $platform]);
+            
+            // Reinitialize platform
+            $this->initializePlatforms();
+            
+            return [
+                'success' => true,
+                'message' => ucfirst($platform) . ' disconnected successfully'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to disconnect ' . ucfirst($platform) . ': ' . $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * Refresh platform token
+     */
+    public function refreshPlatformToken($platform) {
+        try {
+            // Initialize OAuth manager
+            require_once __DIR__ . '/OAuthManager.php';
+            $oauthManager = new OAuthManager($this->pdo, $this->lang);
+            
+            // Get stored token
+            $token = $oauthManager->getStoredToken($this->user_id, $platform);
+            
+            if (!$token || !$token['refresh_token']) {
+                return [
+                    'success' => false,
+                    'message' => 'No refresh token available for ' . ucfirst($platform)
+                ];
+            }
+            
+            // Check if token is expired
+            if (!$oauthManager->isTokenExpired($token)) {
+                return [
+                    'success' => true,
+                    'message' => ucfirst($platform) . ' token is still valid'
+                ];
+            }
+            
+            // Refresh token
+            $newTokenData = $oauthManager->refreshToken($platform, $token['refresh_token']);
+            
+            // Store new token
+            if ($oauthManager->storeToken($this->user_id, $platform, $newTokenData)) {
+                // Reinitialize platform
+                $this->initializePlatforms();
+                
+                return [
+                    'success' => true,
+                    'message' => ucfirst($platform) . ' token refreshed successfully'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to store refreshed token for ' . ucfirst($platform)
+                ];
+            }
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to refresh ' . ucfirst($platform) . ' token: ' . $e->getMessage()
+            ];
+        }
     }
     
     /**
@@ -677,31 +779,159 @@ class YouTubePlatform extends BasePlatform {
     
     private function connectWithToken() {
         try {
-            // Initialize YouTube Data API v3
-            $this->client = new \Google_Client();
-            $this->client->setClientId('');
-            $this->client->setClientSecret('');
-            $this->client->setRedirectUri('https://www2.playlist-manager.de/youtube_play.php');
+            // Initialize OAuth manager
+            require_once __DIR__ . '/OAuthManager.php';
+            $oauthManager = new OAuthManager($this->pdo, $this->lang);
+            
+            // Get stored token
+            $token = $oauthManager->getStoredToken($this->user_id, 'youtube');
+            
+            if (!$token || $oauthManager->isTokenExpired($token)) {
+                // Try to refresh token
+                if ($token && $token['refresh_token']) {
+                    try {
+                        $newTokenData = $oauthManager->refreshToken('youtube', $token['refresh_token']);
+                        $oauthManager->storeToken($this->user_id, 'youtube', $newTokenData);
+                        $token = $newTokenData;
+                    } catch (Exception $e) {
+                        error_log("YouTube token refresh failed: " . $e->getMessage());
+                        $this->connected = false;
+                        return;
+                    }
+                } else {
+                    $this->connected = false;
+                    return;
+                }
+            }
+            
+            // Initialize Google Client
+            $this->client = new \Google\Client();
+            $this->client->setClientId(getenv('YOUTUBE_CLIENT_ID') ?: '');
+            $this->client->setClientSecret(getenv('YOUTUBE_CLIENT_SECRET') ?: '');
+            $this->client->setRedirectUri($this->getBaseUrl() . 'oauth_callback.php?provider=youtube&platform=true');
             $this->client->setScopes([
                 'https://www.googleapis.com/auth/youtube.readonly',
                 'https://www.googleapis.com/auth/youtube.force-ssl'
             ]);
             
-            if ($this->tokens && isset($this->tokens['access_token'])) {
-                $this->client->setAccessToken($this->tokens['access_token']);
-            }
+            // Set access token
+            $this->client->setAccessToken($token['access_token']);
             
-            $this->api = new \Google_Service_YouTube($this->client);
+            // Initialize YouTube API service
+            $this->api = new \Google\Service\YouTube($this->client);
             $this->connected = true;
+            
         } catch (Exception $e) {
             $this->connected = false;
             error_log("YouTube connection error: " . $e->getMessage());
         }
     }
     
+    private function getBaseUrl() {
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'];
+        $path = dirname($_SERVER['REQUEST_URI']);
+        return $protocol . $host . $path . '/';
+    }
+    
+    public function getPlaylists() {
+        if (!$this->connected || !$this->api) {
+            return [];
+        }
+        
+        try {
+            $playlists = [];
+            $nextPageToken = null;
+            
+            do {
+                $params = [
+                    'part' => 'snippet,contentDetails',
+                    'mine' => true,
+                    'maxResults' => 50
+                ];
+                
+                if ($nextPageToken) {
+                    $params['pageToken'] = $nextPageToken;
+                }
+                
+                $response = $this->api->playlists->listPlaylists($params);
+                
+                foreach ($response->getItems() as $playlist) {
+                    $playlists[] = [
+                        'id' => $playlist->getId(),
+                        'name' => $playlist->getSnippet()->getTitle(),
+                        'description' => $playlist->getSnippet()->getDescription(),
+                        'track_count' => $playlist->getContentDetails()->getItemCount(),
+                        'thumbnail' => $playlist->getSnippet()->getThumbnails()->getDefault()->getUrl()
+                    ];
+                }
+                
+                $nextPageToken = $response->getNextPageToken();
+            } while ($nextPageToken);
+            
+            return $playlists;
+            
+        } catch (Exception $e) {
+            error_log("YouTube getPlaylists error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function getPlaylistTracks($playlistId) {
+        if (!$this->connected || !$this->api) {
+            return [];
+        }
+        
+        try {
+            $tracks = [];
+            $nextPageToken = null;
+            
+            do {
+                $params = [
+                    'part' => 'snippet,contentDetails',
+                    'playlistId' => $playlistId,
+                    'maxResults' => 50
+                ];
+                
+                if ($nextPageToken) {
+                    $params['pageToken'] = $nextPageToken;
+                }
+                
+                $response = $this->api->playlistItems->listPlaylistItems($params);
+                
+                foreach ($response->getItems() as $item) {
+                    $snippet = $item->getSnippet();
+                    $tracks[] = [
+                        'id' => $snippet->getResourceId()->getVideoId(),
+                        'title' => $snippet->getTitle(),
+                        'artist' => $snippet->getVideoOwnerChannelTitle(),
+                        'duration' => null, // YouTube API doesn't provide duration in playlist items
+                        'thumbnail' => $snippet->getThumbnails()->getDefault()->getUrl()
+                    ];
+                }
+                
+                $nextPageToken = $response->getNextPageToken();
+            } while ($nextPageToken);
+            
+            return $tracks;
+            
+        } catch (Exception $e) {
+            error_log("YouTube getPlaylistTracks error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function authenticate($code = null) {
+        // This method is now handled by OAuth manager
+        return [
+            'success' => false,
+            'message' => 'Use OAuth manager for authentication'
+        ];
+    }
+    
     public function getStatus() {
         if (!$this->connected) {
-            return ['connected' => false, 'message' => 'Not connected to YouTube Music'];
+            return ['connected' => false, 'message' => 'Not connected to YouTube'];
         }
         
         try {
@@ -722,41 +952,12 @@ class YouTubePlatform extends BasePlatform {
             
             return [
                 'connected' => true,
-                'user' => 'YouTube Music User',
+                'user' => 'YouTube User',
                 'email' => null,
                 'premium' => false
             ];
         } catch (Exception $e) {
             return ['connected' => false, 'message' => 'Connection failed'];
-        }
-    }
-    
-    public function getPlaylists() {
-        if (!$this->connected) {
-            return [
-                ['id' => '', 'name' => 'Amazon Music requires manual control. Open in a new window.', 'tracks' => 0]
-            ];
-        }
-        
-        try {
-            $playlists = $this->api->playlists->listPlaylists('snippet', [
-                'mine' => true,
-                'maxResults' => 50
-            ]);
-            
-            $result = [];
-            foreach ($playlists->getItems() as $playlist) {
-                $result[] = [
-                    'id' => $playlist->getId(),
-                    'name' => $playlist->getSnippet()->getTitle(),
-                    'tracks' => $playlist->getContentDetails()->getItemCount()
-                ];
-            }
-            
-            return $result;
-        } catch (Exception $e) {
-            error_log("Error getting YouTube playlists: " . $e->getMessage());
-            return [];
         }
     }
     
@@ -766,8 +967,7 @@ class YouTubePlatform extends BasePlatform {
         }
         
         try {
-            // YouTube Music playback control would be implemented here
-            // This would typically use YouTube IFrame API on the frontend
+            // YouTube playback control would be implemented here
             return ['success' => true, 'message' => 'Playback started'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Failed to start playback'];
@@ -776,11 +976,10 @@ class YouTubePlatform extends BasePlatform {
     
     public function stopPlayback() {
         if (!$this->connected) {
-            return ['success' => false, 'message' => 'Not connected to YouTube Music'];
+            return ['success' => false, 'message' => 'Not connected to YouTube'];
         }
         
         try {
-            // Stop playback logic
             return ['success' => true, 'message' => 'Playback stopped'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Failed to stop playback'];
@@ -789,11 +988,10 @@ class YouTubePlatform extends BasePlatform {
     
     public function getPlaybackStatus() {
         if (!$this->connected) {
-            return ['success' => false, 'message' => 'Not connected to YouTube Music'];
+            return ['success' => false, 'message' => 'Not connected to YouTube'];
         }
         
         try {
-            // Get current playback status
             return [
                 'success' => true,
                 'playing' => false,
@@ -806,77 +1004,6 @@ class YouTubePlatform extends BasePlatform {
             ];
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Failed to get playback status'];
-        }
-    }
-    
-    public function authenticate($code = null) {
-        try {
-            if ($code) {
-                $token = $this->client->fetchAccessTokenWithAuthCode($code);
-                if (isset($token['access_token'])) {
-                    $this->saveTokens($token['access_token'], $token['refresh_token'] ?? null, $token['expires_in'] ?? null);
-                    $this->connected = true;
-                    return ['success' => true, 'message' => 'YouTube Music connected successfully'];
-                }
-            }
-            
-            // Generate authorization URL
-            $authUrl = $this->client->createAuthUrl();
-            return ['success' => false, 'message' => 'Please authorize', 'auth_url' => $authUrl];
-        } catch (Exception $e) {
-            return ['success' => false, 'message' => 'Authentication failed'];
-        }
-    }
-    
-    public function nextTrack() {
-        if (!$this->connected) {
-            return ['success' => false, 'message' => 'Not connected to YouTube Music'];
-        }
-        
-        try {
-            // Next track logic
-            return ['success' => true, 'message' => 'Next track'];
-        } catch (Exception $e) {
-            return ['success' => false, 'message' => 'Failed to skip track'];
-        }
-    }
-    
-    public function previousTrack() {
-        if (!$this->connected) {
-            return ['success' => false, 'message' => 'Not connected to YouTube Music'];
-        }
-        
-        try {
-            // Previous track logic
-            return ['success' => true, 'message' => 'Previous track'];
-        } catch (Exception $e) {
-            return ['success' => false, 'message' => 'Failed to go to previous track'];
-        }
-    }
-    
-    public function setVolume($volume) {
-        if (!$this->connected) {
-            return ['success' => false, 'message' => 'Not connected to YouTube Music'];
-        }
-        
-        try {
-            // Volume control logic
-            return ['success' => true, 'message' => 'Volume set to ' . $volume];
-        } catch (Exception $e) {
-            return ['success' => false, 'message' => 'Failed to set volume'];
-        }
-    }
-    
-    public function seek($position) {
-        if (!$this->connected) {
-            return ['success' => false, 'message' => 'Not connected to YouTube Music'];
-        }
-        
-        try {
-            // Seek logic
-            return ['success' => true, 'message' => 'Seeked to position ' . $position];
-        } catch (Exception $e) {
-            return ['success' => false, 'message' => 'Failed to seek'];
         }
     }
 }
@@ -1066,4 +1193,5 @@ class AmazonPlatform extends BasePlatform {
         }
     }
 }
+?> 
 ?> 

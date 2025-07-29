@@ -14,24 +14,21 @@ require_auth();
 
 // Handle connect/disconnect platform actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['connect_platform'])) {
-        $platform = $_POST['connect_platform'];
-        require_once 'script/PlatformManager.php';
-        $platformManager = new PlatformManager($pdo, $lang, $_SESSION['user_id']);
-        $platformInstance = $platformManager->getPlatform($platform);
-        if ($platformInstance) {
-            $result = $platformInstance->authenticate();
-            if (isset($result['auth_url'])) {
-                // Redirect to OAuth URL
-                header('Location: ' . $result['auth_url']);
+            if (isset($_POST['connect_platform'])) {
+            $platform = $_POST['connect_platform'];
+            
+            // Use OAuth manager for platform connections
+            require_once 'script/OAuthManager.php';
+            $oauthManager = new OAuthManager($pdo, $lang);
+            
+            try {
+                // Redirect to OAuth initiation for platform connection
+                header('Location: oauth_initiate.php?provider=' . $platform . '&platform=true');
                 exit;
-            } else {
-                $success_message = $result['message'] ?? 'Authentication started.';
+            } catch (Exception $e) {
+                $error_message = 'Platform connection failed: ' . $e->getMessage();
             }
-        } else {
-            $error_message = 'Platform not available.';
         }
-    }
     if (isset($_POST['disconnect_platform'])) {
         $platform = $_POST['disconnect_platform'];
         // Remove token from api_tokens table

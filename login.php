@@ -177,15 +177,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <!-- Social Login Buttons -->
                             <div class="space-y-3">
-                                <button class="btn btn-secondary w-full">
-                                    <i class="fab fa-google mr-2"></i>
-                                    <?php echo $lang->get('continue_with_google'); ?>
-                                </button>
+                                <?php
+                                // Initialize OAuth manager
+                                require_once 'script/OAuthManager.php';
+                                $oauthManager = new OAuthManager($GLOBALS['pdo'], $lang);
                                 
-                                <button class="btn btn-secondary w-full">
-                                    <i class="fab fa-apple mr-2"></i>
-                                    <?php echo $lang->get('continue_with_apple'); ?>
-                                </button>
+                                // Check if OAuth providers are enabled
+                                $googleEnabled = true; // You can make this configurable
+                                $appleEnabled = true;  // You can make this configurable
+                                ?>
+                                
+                                <?php if ($googleEnabled): ?>
+                                    <a href="oauth_initiate.php?provider=google" class="btn btn-secondary w-full">
+                                        <i class="fab fa-google mr-2"></i>
+                                        <?php echo $lang->get('continue_with_google'); ?>
+                                    </a>
+                                <?php endif; ?>
+                                
+                                <?php if ($appleEnabled): ?>
+                                    <a href="oauth_initiate.php?provider=apple" class="btn btn-secondary w-full">
+                                        <i class="fab fa-apple mr-2"></i>
+                                        <?php echo $lang->get('continue_with_apple'); ?>
+                                    </a>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Sign Up Link -->
